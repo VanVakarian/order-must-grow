@@ -125,34 +125,43 @@
     }
   }
 
-  .rabbit-hunger {
+  .rabbit-needs {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    gap: 6px;
+    width: 100%;
 
-    .hunger-label {
-      font-size: 11px;
-      color: #888;
-    }
-
-    .hunger-bar {
-      width: 100%;
-      height: 8px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 4px;
-      overflow: hidden;
-
-      .hunger-fill {
-        height: 100%;
-        transition: all 0.3s ease;
-        border-radius: 4px;
-      }
-    }
-
-    .hunger-value {
+    .need-item {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 4px;
       font-size: 10px;
-      font-weight: 500;
-      margin-top: 2px;
+
+      .need-label {
+        color: #888;
+        font-weight: bold;
+        min-width: 12px;
+      }
+
+      .need-bar {
+        flex: 1;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+
+        .need-fill {
+          height: 100%;
+          transition: all 0.3s ease;
+          border-radius: 4px;
+        }
+      }
+
+      .need-value {
+        font-weight: 500;
+        min-width: 28px;
+        text-align: right;
+      }
     }
   }
 

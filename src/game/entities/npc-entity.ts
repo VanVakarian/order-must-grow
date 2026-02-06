@@ -11,6 +11,9 @@ export abstract class NPCEntity extends Entity {
   protected worldMap: WorldMap;
   protected targetPosition: Position | null;
   protected moveSpeed: number;
+  protected baseMoveSpeed: number;
+  protected urgentMoveSpeed: number;
+  protected lastDirection: number = 1;
 
   constructor(scene: Phaser.Scene, type: EntityType, x: number, y: number, worldMap: WorldMap) {
     super(scene, type, x, y);
@@ -19,7 +22,9 @@ export abstract class NPCEntity extends Entity {
     this.currentBehavior = null;
     this.worldMap = worldMap;
     this.targetPosition = null;
-    this.moveSpeed = 0.5;
+    this.baseMoveSpeed = 1.0;
+    this.urgentMoveSpeed = 3.5;
+    this.moveSpeed = this.baseMoveSpeed;
     this.initializeNeeds();
     this.initializeBehaviors();
   }
@@ -29,10 +34,25 @@ export abstract class NPCEntity extends Entity {
 
   update(deltaTime: number): void {
     this.updateNeeds(deltaTime);
+    this.updateMoveSpeed();
     this.updateAI(deltaTime);
     this.updateMovement(deltaTime);
     this.updateSpritePosition();
     this.updateHighlightFrame();
+  }
+
+  protected updateMoveSpeed(): void {
+    const hunger = this.needs.get(NeedType.HUNGER);
+    const thirst = this.needs.get(NeedType.THIRST);
+
+    const isHungry = hunger && hunger.value >= hunger.threshold;
+    const isThirsty = thirst && thirst.value >= thirst.threshold;
+
+    if (isHungry || isThirsty) {
+      this.moveSpeed = this.urgentMoveSpeed;
+    } else {
+      this.moveSpeed = this.baseMoveSpeed;
+    }
   }
 
   protected updateNeeds(deltaTime: number): void {
@@ -78,6 +98,16 @@ export abstract class NPCEntity extends Entity {
 
     this.position.x += dx * ratio;
     this.position.y += dy * ratio;
+
+    if (Math.abs(dx) > 0.01) {
+      const newDirection = dx > 0 ? 1 : -1;
+      if (newDirection !== this.lastDirection) {
+        this.lastDirection = newDirection;
+        if ('setFlipX' in this.sprite) {
+          this.sprite.setFlipX(newDirection < 0);
+        }
+      }
+    }
   }
 
   protected updateSpritePosition(): void {

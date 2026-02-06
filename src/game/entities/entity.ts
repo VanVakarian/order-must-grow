@@ -5,7 +5,10 @@ export abstract class Entity {
   protected id: string;
   protected type: EntityType;
   protected position: Position;
-  protected sprite: Phaser.GameObjects.Rectangle;
+  protected sprite:
+    | Phaser.GameObjects.Rectangle
+    | Phaser.GameObjects.Image
+    | Phaser.GameObjects.Sprite;
   protected scene: Phaser.Scene;
   protected highlightFrame: Phaser.GameObjects.Graphics;
 
@@ -18,7 +21,10 @@ export abstract class Entity {
     this.highlightFrame = this.createHighlightFrame();
   }
 
-  protected abstract createSprite(): Phaser.GameObjects.Rectangle;
+  protected abstract createSprite():
+    | Phaser.GameObjects.Rectangle
+    | Phaser.GameObjects.Image
+    | Phaser.GameObjects.Sprite;
 
   abstract update(deltaTime: number): void;
 
@@ -99,7 +105,7 @@ export abstract class Entity {
     this.position.y = y;
   }
 
-  getSprite(): Phaser.GameObjects.Rectangle {
+  getSprite(): Phaser.GameObjects.Rectangle | Phaser.GameObjects.Image | Phaser.GameObjects.Sprite {
     return this.sprite;
   }
 

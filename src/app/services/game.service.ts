@@ -10,6 +10,7 @@ export interface RabbitDebugData {
   fullId: string;
   position: { x: number; y: number };
   hunger: number;
+  thirst: number;
   status: string;
 }
 
@@ -58,12 +59,14 @@ export class GameService {
 
     return rabbits.map((rabbit) => {
       const hunger = rabbit.getNeed(NeedType.HUNGER);
+      const thirst = rabbit.getNeed(NeedType.THIRST);
       const fullId = rabbit.getId();
       return {
         id: fullId.slice(0, 8),
         fullId,
         position: rabbit.getPosition(),
         hunger: hunger ? Math.round(hunger.value) : 0,
+        thirst: thirst ? Math.round(thirst.value) : 0,
         status: rabbit.getCurrentBehaviorName(),
       };
     });

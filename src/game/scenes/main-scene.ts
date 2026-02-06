@@ -8,7 +8,9 @@ enum TextureKey {
   TILE_STONE = 'tile-stone',
   TILE_DIRT = 'tile-dirt',
   TILE_GRASS = 'tile-grass',
+  TILE_WATER = 'tile-water',
   SELECTION_MARKER = 'selection-marker',
+  RABBIT = 'rabbit',
 }
 
 enum ZoomAnchorMode {
@@ -55,6 +57,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   private preload() {
+    this.load.image(TextureKey.RABBIT, 'assets/sprites/rabbit.png');
     this.createTileGraphics();
     this.createSelectionMarkerGraphics();
   }
@@ -99,6 +102,13 @@ export class MainScene extends Phaser.Scene {
     graphics.lineStyle(1, 0x000000, 0.1);
     graphics.strokeRect(0, 0, this.tileSize, this.tileSize);
     graphics.generateTexture(TextureKey.TILE_GRASS, this.tileSize, this.tileSize);
+    graphics.clear();
+
+    graphics.fillStyle(0x4a90d9, 1);
+    graphics.fillRect(0, 0, this.tileSize, this.tileSize);
+    graphics.lineStyle(1, 0x000000, 0.1);
+    graphics.strokeRect(0, 0, this.tileSize, this.tileSize);
+    graphics.generateTexture(TextureKey.TILE_WATER, this.tileSize, this.tileSize);
 
     graphics.destroy();
   }
@@ -110,7 +120,7 @@ export class MainScene extends Phaser.Scene {
     const padding = 2; // Offset from the tile edge
     const cornerLength = 12;
     const radius = 6;
-    const color = 0xffa500; // Orange
+    const color = 0xff8c00; // Dark Orange
 
     graphics.lineStyle(thickness, color, 1);
 
@@ -170,6 +180,10 @@ export class MainScene extends Phaser.Scene {
   }
 
   private getTileTexture(tileData: any): string {
+    if (tileData.type === TileType.WATER) {
+      return TextureKey.TILE_WATER;
+    }
+
     if (tileData.vegetation) {
       return TextureKey.TILE_GRASS;
     }
@@ -371,7 +385,8 @@ export class MainScene extends Phaser.Scene {
       const dy = worldPoint.y - sprite.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      if (distance < sprite.width / 2 + 5) {
+      const spriteWidth = 'width' in sprite ? sprite.width : 48;
+      if (distance < spriteWidth / 2 + 5) {
         hoveredNPC = entity;
         break;
       }

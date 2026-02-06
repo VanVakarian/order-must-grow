@@ -8,7 +8,7 @@
 
   @if (isExpanded$$()) {
     <div class="content">
-      @for (rabbit of rabbits$$(); track rabbit.id) {
+      @for (rabbit of rabbits$$(); track rabbit.fullId) {
         <div class="rabbit-item"
              (mouseenter)="onRabbitHover(rabbit)"
              (mouseleave)="onRabbitLeave()"
@@ -22,18 +22,33 @@
             <span class="status-label">Status:</span>
             <span class="status-value">{{ rabbit.status }}</span>
           </div>
-          <div class="rabbit-hunger">
-            <span class="hunger-label">Hunger:</span>
-            <div class="hunger-bar">
-              <div class="hunger-fill"
-                   [style.width.%]="rabbit.hunger"
-                   [style.background-color]="getHungerColor(rabbit.hunger)">
+          <div class="rabbit-needs">
+            <div class="need-item">
+              <span class="need-label">H:</span>
+              <div class="need-bar">
+                <div class="need-fill"
+                     [style.width.%]="rabbit.hunger"
+                     [style.background-color]="getNeedColor(rabbit.hunger)">
+                </div>
               </div>
+              <span class="need-value"
+                    [style.color]="getNeedColor(rabbit.hunger)">
+                {{ rabbit.hunger }}%
+              </span>
             </div>
-            <span class="hunger-value"
-                  [style.color]="getHungerColor(rabbit.hunger)">
-              {{ rabbit.hunger }}% - {{ getHungerLabel(rabbit.hunger) }}
-            </span>
+            <div class="need-item">
+              <span class="need-label">T:</span>
+              <div class="need-bar">
+                <div class="need-fill"
+                     [style.width.%]="rabbit.thirst"
+                     [style.background-color]="getNeedColor(rabbit.thirst)">
+                </div>
+              </div>
+              <span class="need-value"
+                    [style.color]="getNeedColor(rabbit.thirst)">
+                {{ rabbit.thirst }}%
+              </span>
+            </div>
           </div>
         </div>
         }

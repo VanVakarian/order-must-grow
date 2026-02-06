@@ -48,14 +48,22 @@ export class DebugPanel {
   }
 
   protected getHungerColor(hunger: number): string {
-    if (hunger < 30) return '#4ade80';
-    if (hunger < 60) return '#fbbf24';
-    return '#ef4444';
+    return this.getNeedColor(hunger);
   }
 
   protected getHungerLabel(hunger: number): string {
-    if (hunger < 30) return 'Satisfied';
-    if (hunger < 60) return 'Hungry';
+    return this.getNeedLabel(hunger);
+  }
+
+  protected getNeedColor(value: number): string {
+    if (value < 30) return '#4ade80';
+    if (value < 60) return '#fbbf24';
+    return '#ef4444';
+  }
+
+  protected getNeedLabel(value: number): string {
+    if (value < 30) return 'Satisfied';
+    if (value < 60) return 'Hungry';
     return 'Starving';
   }
 

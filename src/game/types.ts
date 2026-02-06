@@ -1,6 +1,7 @@
 export enum TileType {
   STONE = 'STONE',
   DIRT = 'DIRT',
+  WATER = 'WATER',
 }
 
 export enum VegetationType {
@@ -25,6 +26,7 @@ export enum EntityType {
 
 export enum NeedType {
   HUNGER = 'HUNGER',
+  THIRST = 'THIRST',
 }
 
 export interface Need {
