@@ -1,25 +1,25 @@
-import { Component, OnDestroy, OnInit, afterNextRender, signal } from '@angular/core';
+import { Component, DestroyRef, afterNextRender, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { DebugPanel } from './components/debug-panel/debug-panel';
 import { GameService } from './services/game.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, DebugPanel],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
-export class App implements OnInit, OnDestroy {
-  protected readonly title = signal('megagame');
+export class App {
+  private readonly gameService = inject(GameService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  constructor(private gameService: GameService) {
+  constructor() {
     afterNextRender(() => {
       this.gameService.initializeGame('game-container');
     });
-  }
 
-  ngOnInit() {}
-
-  ngOnDestroy() {
-    this.gameService.destroyGame();
+    this.destroyRef.onDestroy(() => {
+      this.gameService.destroyGame();
+    });
   }
 }

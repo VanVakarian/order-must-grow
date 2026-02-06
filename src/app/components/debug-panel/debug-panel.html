@@ -1,0 +1,46 @@
+<div class="debug-panel"
+     [class.expanded]="isExpanded$$()">
+  <div class="header"
+       (click)="togglePanel()">
+    <span class="title">🐰 NPCs</span>
+    <span class="toggle">{{ isExpanded$$() ? '▼' : '▲' }}</span>
+  </div>
+
+  @if (isExpanded$$()) {
+    <div class="content">
+      @for (rabbit of rabbits$$(); track rabbit.id) {
+        <div class="rabbit-item"
+             (mouseenter)="onRabbitHover(rabbit)"
+             (mouseleave)="onRabbitLeave()"
+             (click)="onRabbitClick(rabbit)">
+          <div class="rabbit-header">
+            <span class="rabbit-id">Rabbit #{{ rabbit.id }}</span>
+            <span class="rabbit-pos">{{ rabbit.position.x | number:'1.0-0' }},
+              {{ rabbit.position.y | number:'1.0-0' }}</span>
+          </div>
+          <div class="rabbit-status">
+            <span class="status-label">Status:</span>
+            <span class="status-value">{{ rabbit.status }}</span>
+          </div>
+          <div class="rabbit-hunger">
+            <span class="hunger-label">Hunger:</span>
+            <div class="hunger-bar">
+              <div class="hunger-fill"
+                   [style.width.%]="rabbit.hunger"
+                   [style.background-color]="getHungerColor(rabbit.hunger)">
+              </div>
+            </div>
+            <span class="hunger-value"
+                  [style.color]="getHungerColor(rabbit.hunger)">
+              {{ rabbit.hunger }}% - {{ getHungerLabel(rabbit.hunger) }}
+            </span>
+          </div>
+        </div>
+        }
+
+        @if (rabbits$$().length === 0) {
+          <div class="no-data">No rabbits found</div>
+        }
+    </div>
+    }
+</div>

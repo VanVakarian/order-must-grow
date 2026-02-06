@@ -1,7 +1,13 @@
 import Phaser from 'phaser';
+import { EntityManager } from '../entities/entity-manager';
+import { Rabbit } from '../entities/npcs/rabbit';
+import { TileType } from '../types';
+import { WorldMap } from '../world/world-map';
 
 enum TextureKey {
-  TILE_GROUND = 'tile-ground',
+  TILE_STONE = 'tile-stone',
+  TILE_DIRT = 'tile-dirt',
+  TILE_GRASS = 'tile-grass',
   SELECTION_MARKER = 'selection-marker',
 }
 
@@ -12,8 +18,12 @@ enum ZoomAnchorMode {
 
 export class MainScene extends Phaser.Scene {
   private tileSize = 48;
-  private mapWidthInTiles = 12;
-  private mapHeightInTiles = 12;
+  private mapWidthInTiles = 50;
+  private mapHeightInTiles = 50;
+
+  private worldMap!: WorldMap;
+  private entityManager!: EntityManager;
+  private tileSprites: Map<string, Phaser.GameObjects.Image> = new Map();
 
   private minZoom = 0.5;
   private maxZoom = 4;
@@ -38,6 +48,8 @@ export class MainScene extends Phaser.Scene {
 
   private selectionMarker!: Phaser.GameObjects.Image;
 
+  private highlightedNPCId: string | null = null;
+
   constructor() {
     super({ key: 'MainScene' });
   }
@@ -48,26 +60,46 @@ export class MainScene extends Phaser.Scene {
   }
 
   private create() {
+    this.worldMap = new WorldMap(this.mapWidthInTiles, this.mapHeightInTiles);
+    this.entityManager = new EntityManager();
+
     this.createMap();
     this.setupCamera();
     this.setupInput();
     this.createSelectionMarker();
+    this.spawnRabbits();
   }
 
   override update(_time: number, delta: number) {
     this.handleKeyboardInput(delta);
     this.updateSelectionMarker();
+    this.entityManager.update(delta);
+    this.updateTileVisuals();
   }
 
   private createTileGraphics() {
     const graphics = this.add.graphics();
-    graphics.fillStyle(0x8b7355, 1);
-    graphics.fillRect(0, 0, this.tileSize, this.tileSize);
 
+    graphics.fillStyle(0x808080, 1);
+    graphics.fillRect(0, 0, this.tileSize, this.tileSize);
     graphics.lineStyle(1, 0x000000, 0.1);
     graphics.strokeRect(0, 0, this.tileSize, this.tileSize);
+    graphics.generateTexture(TextureKey.TILE_STONE, this.tileSize, this.tileSize);
+    graphics.clear();
 
-    graphics.generateTexture(TextureKey.TILE_GROUND, this.tileSize, this.tileSize);
+    graphics.fillStyle(0x8b7355, 1);
+    graphics.fillRect(0, 0, this.tileSize, this.tileSize);
+    graphics.lineStyle(1, 0x000000, 0.1);
+    graphics.strokeRect(0, 0, this.tileSize, this.tileSize);
+    graphics.generateTexture(TextureKey.TILE_DIRT, this.tileSize, this.tileSize);
+    graphics.clear();
+
+    graphics.fillStyle(0x4a7c3e, 1);
+    graphics.fillRect(0, 0, this.tileSize, this.tileSize);
+    graphics.lineStyle(1, 0x000000, 0.1);
+    graphics.strokeRect(0, 0, this.tileSize, this.tileSize);
+    graphics.generateTexture(TextureKey.TILE_GRASS, this.tileSize, this.tileSize);
+
     graphics.destroy();
   }
 
@@ -119,13 +151,66 @@ export class MainScene extends Phaser.Scene {
   }
 
   private createMap() {
+    const tiles = this.worldMap.getAllTiles();
+
     for (let y = 0; y < this.mapHeightInTiles; y++) {
       for (let x = 0; x < this.mapWidthInTiles; x++) {
+        const tileData = tiles[y][x];
         const worldX = x * this.tileSize;
         const worldY = y * this.tileSize;
-        const tile = this.add.image(worldX, worldY, TextureKey.TILE_GROUND);
+
+        const textureKey = this.getTileTexture(tileData);
+        const tile = this.add.image(worldX, worldY, textureKey);
         tile.setOrigin(0, 0);
         tile.setDepth(0);
+
+        this.tileSprites.set(`${x},${y}`, tile);
+      }
+    }
+  }
+
+  private getTileTexture(tileData: any): string {
+    if (tileData.vegetation) {
+      return TextureKey.TILE_GRASS;
+    }
+
+    return tileData.type === TileType.STONE ? TextureKey.TILE_STONE : TextureKey.TILE_DIRT;
+  }
+
+  private updateTileVisuals(): void {
+    const tiles = this.worldMap.getAllTiles();
+
+    for (let y = 0; y < this.mapHeightInTiles; y++) {
+      for (let x = 0; x < this.mapWidthInTiles; x++) {
+        const tileData = tiles[y][x];
+        const sprite = this.tileSprites.get(`${x},${y}`);
+
+        if (sprite) {
+          const textureKey = this.getTileTexture(tileData);
+          if (sprite.texture.key !== textureKey) {
+            sprite.setTexture(textureKey);
+          }
+        }
+      }
+    }
+  }
+
+  private spawnRabbits(): void {
+    const numRabbits = 5;
+
+    for (let i = 0; i < numRabbits; i++) {
+      let x, y;
+      let attempts = 0;
+
+      do {
+        x = Math.floor(Math.random() * this.mapWidthInTiles);
+        y = Math.floor(Math.random() * this.mapHeightInTiles);
+        attempts++;
+      } while (!this.worldMap.isWalkable(x, y) && attempts < 100);
+
+      if (attempts < 100) {
+        const rabbit = new Rabbit(this, x, y, this.worldMap);
+        this.entityManager.addEntity(rabbit);
       }
     }
   }
@@ -196,7 +281,7 @@ export class MainScene extends Phaser.Scene {
         const nextZoom = Phaser.Math.Clamp(
           previousZoom * (1 - dy * this.zoomSpeed),
           this.minZoom,
-          this.maxZoom
+          this.maxZoom,
         );
 
         if (nextZoom === previousZoom) return;
@@ -209,10 +294,10 @@ export class MainScene extends Phaser.Scene {
           before.y,
           anchorScreenX,
           anchorScreenY,
-          nextZoom
+          nextZoom,
         );
         camera.setScroll(nextScroll.x, nextScroll.y);
-      }
+      },
     );
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
@@ -277,19 +362,43 @@ export class MainScene extends Phaser.Scene {
     const camera = this.cameras.main;
     const worldPoint = this.screenToWorld(camera, pointer.x, pointer.y, camera.zoom);
 
-    const tileX = Math.floor(worldPoint.x / this.tileSize);
-    const tileY = Math.floor(worldPoint.y / this.tileSize);
+    const entities = this.entityManager.getAllEntities();
+    let hoveredNPC = null;
 
-    const isWithinBounds =
-      tileX >= 0 && tileX < this.mapWidthInTiles && tileY >= 0 && tileY < this.mapHeightInTiles;
+    for (const entity of entities) {
+      const sprite = entity.getSprite();
+      const dx = worldPoint.x - sprite.x;
+      const dy = worldPoint.y - sprite.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (isWithinBounds) {
-      this.selectionMarker.setVisible(true);
-      this.selectionMarker.setPosition(tileX * this.tileSize, tileY * this.tileSize);
+      if (distance < sprite.width / 2 + 5) {
+        hoveredNPC = entity;
+        break;
+      }
+    }
+
+    for (const entity of entities) {
+      entity.setHighlight(entity === hoveredNPC);
+    }
+
+    if (hoveredNPC) {
+      this.selectionMarker.setVisible(false);
       this.game.canvas.style.cursor = 'pointer';
     } else {
-      this.selectionMarker.setVisible(false);
-      this.game.canvas.style.cursor = 'default';
+      const tileX = Math.floor(worldPoint.x / this.tileSize);
+      const tileY = Math.floor(worldPoint.y / this.tileSize);
+
+      const isWithinBounds =
+        tileX >= 0 && tileX < this.mapWidthInTiles && tileY >= 0 && tileY < this.mapHeightInTiles;
+
+      if (isWithinBounds) {
+        this.selectionMarker.setVisible(true);
+        this.selectionMarker.setPosition(tileX * this.tileSize, tileY * this.tileSize);
+        this.game.canvas.style.cursor = 'pointer';
+      } else {
+        this.selectionMarker.setVisible(false);
+        this.game.canvas.style.cursor = 'default';
+      }
     }
   }
 
@@ -297,13 +406,13 @@ export class MainScene extends Phaser.Scene {
     camera: Phaser.Cameras.Scene2D.Camera,
     screenX: number,
     screenY: number,
-    zoom: number
+    zoom: number,
   ) {
     const centerWorldX = camera.scrollX + camera.width / 2;
     const centerWorldY = camera.scrollY + camera.height / 2;
     return new Phaser.Math.Vector2(
       centerWorldX + (screenX - camera.width / 2) / zoom,
-      centerWorldY + (screenY - camera.height / 2) / zoom
+      centerWorldY + (screenY - camera.height / 2) / zoom,
     );
   }
 
@@ -313,13 +422,38 @@ export class MainScene extends Phaser.Scene {
     worldY: number,
     screenX: number,
     screenY: number,
-    zoom: number
+    zoom: number,
   ) {
     const centerWorldX = worldX - (screenX - camera.width / 2) / zoom;
     const centerWorldY = worldY - (screenY - camera.height / 2) / zoom;
     return new Phaser.Math.Vector2(
       centerWorldX - camera.width / 2,
-      centerWorldY - camera.height / 2
+      centerWorldY - camera.height / 2,
     );
+  }
+
+  getEntityManager(): EntityManager {
+    return this.entityManager;
+  }
+
+  focusOnEntity(entityId: string): void {
+    const entities = this.entityManager.getAllEntities();
+    const entity = entities.find((e) => e.getId() === entityId);
+
+    if (!entity) return;
+
+    const entityPos = entity.getPosition();
+    const targetWorldX = entityPos.x * this.tileSize + this.tileSize / 2;
+    const targetWorldY = entityPos.y * this.tileSize + this.tileSize / 2;
+
+    const camera = this.cameras.main;
+
+    this.tweens.add({
+      targets: camera,
+      scrollX: targetWorldX - camera.width / 2,
+      scrollY: targetWorldY - camera.height / 2,
+      duration: 600,
+      ease: 'Power2',
+    });
   }
 }
