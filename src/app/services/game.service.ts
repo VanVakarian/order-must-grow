@@ -5,9 +5,10 @@ import { NPCEntity } from '../../game/entities/npc-entity';
 import { MainScene } from '../../game/scenes/main-scene';
 import { NeedType } from '../../game/types';
 
-export interface RabbitDebugData {
+export interface NpcDebugData {
   id: string;
   fullId: string;
+  type: string;
   position: { x: number; y: number };
   hunger: number;
   thirst: number;
@@ -44,7 +45,7 @@ export class GameService {
     }
   }
 
-  getRabbitsDebugData(): RabbitDebugData[] {
+  getNpcsDebugData(): NpcDebugData[] {
     const game = this.game$$();
     if (!game) return [];
 
@@ -55,46 +56,41 @@ export class GameService {
     if (!entityManager) return [];
 
     const entities = entityManager.getAllEntities();
-    const rabbits = entities.filter((e) => e instanceof NPCEntity) as NPCEntity[];
+    const npcs = entities.filter((e) => e instanceof NPCEntity) as NPCEntity[];
 
-    return rabbits.map((rabbit) => {
-      const hunger = rabbit.getNeed(NeedType.HUNGER);
-      const thirst = rabbit.getNeed(NeedType.THIRST);
-      const fullId = rabbit.getId();
+    return npcs.map((npc) => {
+      const hunger = npc.getNeed(NeedType.HUNGER);
+      const thirst = npc.getNeed(NeedType.THIRST);
+      const fullId = npc.getId();
       return {
         id: fullId.slice(0, 8),
         fullId,
-        position: rabbit.getPosition(),
+        type: npc.getType(),
+        position: npc.getPosition(),
         hunger: hunger ? Math.round(hunger.value) : 0,
         thirst: thirst ? Math.round(thirst.value) : 0,
-        status: rabbit.getCurrentBehaviorName(),
+        status: npc.getCurrentBehaviorName(),
       };
     });
   }
 
-  highlightRabbit(rabbitId: string | null): void {
+  highlightNpc(npcId: string | null): void {
     const game = this.game$$();
     if (!game) return;
 
     const scene = game.scene.getScene('MainScene') as MainScene;
     if (!scene) return;
 
-    const entityManager = scene.getEntityManager();
-    if (!entityManager) return;
-
-    const entities = entityManager.getAllEntities();
-    for (const entity of entities) {
-      entity.setHighlight(entity.getId() === rabbitId);
-    }
+    scene.setHighlightedEntityId(npcId);
   }
 
-  focusOnRabbit(rabbitId: string): void {
+  focusOnNpc(npcId: string): void {
     const game = this.game$$();
     if (!game) return;
 
     const scene = game.scene.getScene('MainScene') as MainScene;
     if (!scene) return;
 
-    scene.focusOnEntity(rabbitId);
+    scene.focusOnEntity(npcId);
   }
 }

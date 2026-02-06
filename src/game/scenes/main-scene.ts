@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { EntityManager } from '../entities/entity-manager';
 import { Rabbit } from '../entities/npcs/rabbit';
+import { Wolf } from '../entities/npcs/wolf';
 import { TileType } from '../types';
 import { WorldMap } from '../world/world-map';
 
@@ -11,6 +12,7 @@ enum TextureKey {
   TILE_WATER = 'tile-water',
   SELECTION_MARKER = 'selection-marker',
   RABBIT = 'rabbit',
+  WOLF = 'wolf',
 }
 
 enum ZoomAnchorMode {
@@ -58,6 +60,7 @@ export class MainScene extends Phaser.Scene {
 
   private preload() {
     this.load.image(TextureKey.RABBIT, 'assets/sprites/rabbit.png');
+    this.load.image(TextureKey.WOLF, 'assets/sprites/wolf.png');
     this.createTileGraphics();
     this.createSelectionMarkerGraphics();
   }
@@ -71,6 +74,7 @@ export class MainScene extends Phaser.Scene {
     this.setupInput();
     this.createSelectionMarker();
     this.spawnRabbits();
+    this.spawnWolves();
   }
 
   override update(_time: number, delta: number) {
@@ -223,8 +227,28 @@ export class MainScene extends Phaser.Scene {
       } while (!this.worldMap.isWalkable(x, y) && attempts < 100);
 
       if (attempts < 100) {
-        const rabbit = new Rabbit(this, x, y, this.worldMap);
+        const rabbit = new Rabbit(this, x, y, this.worldMap, this.entityManager);
         this.entityManager.addEntity(rabbit);
+      }
+    }
+  }
+
+  private spawnWolves(): void {
+    const numWolves = 2;
+
+    for (let i = 0; i < numWolves; i++) {
+      let x, y;
+      let attempts = 0;
+
+      do {
+        x = Math.floor(Math.random() * this.mapWidthInTiles);
+        y = Math.floor(Math.random() * this.mapHeightInTiles);
+        attempts++;
+      } while (!this.worldMap.isWalkable(x, y) && attempts < 100);
+
+      if (attempts < 100) {
+        const wolf = new Wolf(this, x, y, this.worldMap, this.entityManager);
+        this.entityManager.addEntity(wolf);
       }
     }
   }
@@ -392,8 +416,18 @@ export class MainScene extends Phaser.Scene {
       }
     }
 
+    const highlightedByList =
+      hoveredNPC || this.highlightedNPCId === null
+        ? null
+        : (entities.find((entity) => entity.getId() === this.highlightedNPCId) ?? null);
+
     for (const entity of entities) {
-      entity.setHighlight(entity === hoveredNPC);
+      const shouldHighlight = hoveredNPC
+        ? entity === hoveredNPC
+        : highlightedByList
+          ? entity === highlightedByList
+          : false;
+      entity.setHighlight(shouldHighlight);
     }
 
     if (hoveredNPC) {
@@ -470,5 +504,9 @@ export class MainScene extends Phaser.Scene {
       duration: 600,
       ease: 'Power2',
     });
+  }
+
+  setHighlightedEntityId(entityId: string | null): void {
+    this.highlightedNPCId = entityId;
   }
 }

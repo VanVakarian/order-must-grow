@@ -2,59 +2,59 @@
      [class.expanded]="isExpanded$$()">
   <div class="header"
        (click)="togglePanel()">
-    <span class="title">🐰 NPCs</span>
+    <span class="title">NPCs</span>
     <span class="toggle">{{ isExpanded$$() ? '▼' : '▲' }}</span>
   </div>
 
   @if (isExpanded$$()) {
     <div class="content">
-      @for (rabbit of rabbits$$(); track rabbit.fullId) {
+      @for (npc of npcs$$(); track npc.fullId) {
         <div class="rabbit-item"
-             (mouseenter)="onRabbitHover(rabbit)"
-             (mouseleave)="onRabbitLeave()"
-             (click)="onRabbitClick(rabbit)">
+             (mouseenter)="onNpcHover(npc)"
+             (mouseleave)="onNpcLeave()"
+             (click)="onNpcClick(npc)">
           <div class="rabbit-header">
-            <span class="rabbit-id">Rabbit #{{ rabbit.id }}</span>
-            <span class="rabbit-pos">{{ rabbit.position.x | number:'1.0-0' }},
-              {{ rabbit.position.y | number:'1.0-0' }}</span>
+            <span class="rabbit-id">{{ npc.type }} #{{ npc.id }}</span>
+            <span class="rabbit-pos">{{ npc.position.x | number:'1.0-0' }},
+              {{ npc.position.y | number:'1.0-0' }}</span>
           </div>
           <div class="rabbit-status">
             <span class="status-label">Status:</span>
-            <span class="status-value">{{ rabbit.status }}</span>
+            <span class="status-value">{{ npc.status }}</span>
           </div>
           <div class="rabbit-needs">
             <div class="need-item">
               <span class="need-label">H:</span>
               <div class="need-bar">
                 <div class="need-fill"
-                     [style.width.%]="rabbit.hunger"
-                     [style.background-color]="getNeedColor(rabbit.hunger)">
+                     [style.width.%]="npc.hunger"
+                     [style.background-color]="getNeedColor(npc.hunger)">
                 </div>
               </div>
               <span class="need-value"
-                    [style.color]="getNeedColor(rabbit.hunger)">
-                {{ rabbit.hunger }}%
+                    [style.color]="getNeedColor(npc.hunger)">
+                {{ npc.hunger }}%
               </span>
             </div>
             <div class="need-item">
               <span class="need-label">T:</span>
               <div class="need-bar">
                 <div class="need-fill"
-                     [style.width.%]="rabbit.thirst"
-                     [style.background-color]="getNeedColor(rabbit.thirst)">
+                     [style.width.%]="npc.thirst"
+                     [style.background-color]="getNeedColor(npc.thirst)">
                 </div>
               </div>
               <span class="need-value"
-                    [style.color]="getNeedColor(rabbit.thirst)">
-                {{ rabbit.thirst }}%
+                    [style.color]="getNeedColor(npc.thirst)">
+                {{ npc.thirst }}%
               </span>
             </div>
           </div>
         </div>
         }
 
-        @if (rabbits$$().length === 0) {
-          <div class="no-data">No rabbits found</div>
+        @if (npcs$$().length === 0) {
+          <div class="no-data">No NPCs found</div>
         }
     </div>
     }

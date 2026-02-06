@@ -1,6 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, effect, inject, signal, untracked } from '@angular/core';
-import { GameService, RabbitDebugData } from '../../services/game.service';
+import { GameService, NpcDebugData } from '../../services/game.service';
 
 @Component({
   selector: 'debug-panel',
@@ -12,7 +12,7 @@ export class DebugPanel {
   private readonly gameService = inject(GameService);
 
   protected readonly isExpanded$$ = signal(true);
-  protected readonly rabbits$$ = signal<RabbitDebugData[]>([]);
+  protected readonly npcs$$ = signal<NpcDebugData[]>([]);
 
   constructor() {
     let intervalId: number | undefined;
@@ -23,8 +23,8 @@ export class DebugPanel {
       if (isGameReady) {
         intervalId = window.setInterval(() => {
           untracked(() => {
-            const data = this.gameService.getRabbitsDebugData();
-            this.rabbits$$.set(data);
+            const data = this.gameService.getNpcsDebugData();
+            this.npcs$$.set(data);
           });
         }, 100);
       } else {
@@ -32,7 +32,7 @@ export class DebugPanel {
           clearInterval(intervalId);
           intervalId = undefined;
         }
-        this.rabbits$$.set([]);
+        this.npcs$$.set([]);
       }
 
       onCleanup(() => {
@@ -67,15 +67,15 @@ export class DebugPanel {
     return 'Starving';
   }
 
-  protected onRabbitHover(rabbit: RabbitDebugData): void {
-    this.gameService.highlightRabbit(rabbit.fullId);
+  protected onNpcHover(npc: NpcDebugData): void {
+    this.gameService.highlightNpc(npc.fullId);
   }
 
-  protected onRabbitLeave(): void {
-    this.gameService.highlightRabbit(null);
+  protected onNpcLeave(): void {
+    this.gameService.highlightNpc(null);
   }
 
-  protected onRabbitClick(rabbit: RabbitDebugData): void {
-    this.gameService.focusOnRabbit(rabbit.fullId);
+  protected onNpcClick(npc: NpcDebugData): void {
+    this.gameService.focusOnNpc(npc.fullId);
   }
 }

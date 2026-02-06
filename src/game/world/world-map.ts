@@ -147,6 +147,88 @@ export class WorldMap {
     return tile !== null && tile.type !== TileType.WATER;
   }
 
+  findPath(start: Position, end: Position): Position[] | null {
+    const startX = Math.round(start.x);
+    const startY = Math.round(start.y);
+    const endX = Math.round(end.x);
+    const endY = Math.round(end.y);
+
+    if (startX === endX && startY === endY) {
+      return [];
+    }
+
+    if (!this.isWalkable(endX, endY)) {
+      return null;
+    }
+
+    const width = this.width;
+    const height = this.height;
+    const toIndex = (x: number, y: number) => y * width + x;
+
+    const visited = new Array(width * height).fill(false);
+    const parent = new Array(width * height).fill(-1);
+    const queueX: number[] = [];
+    const queueY: number[] = [];
+
+    const startIndex = toIndex(startX, startY);
+    visited[startIndex] = true;
+    queueX.push(startX);
+    queueY.push(startY);
+
+    const directions = [
+      { x: 0, y: -1 },
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+      { x: -1, y: 0 },
+      { x: 1, y: -1 },
+      { x: 1, y: 1 },
+      { x: -1, y: 1 },
+      { x: -1, y: -1 },
+    ];
+
+    while (queueX.length > 0) {
+      const x = queueX.shift() as number;
+      const y = queueY.shift() as number;
+      if (x === endX && y === endY) break;
+
+      for (const dir of directions) {
+        const nextX = x + dir.x;
+        const nextY = y + dir.y;
+        if (nextX < 0 || nextX >= width || nextY < 0 || nextY >= height) continue;
+        if (dir.x !== 0 && dir.y !== 0) {
+          if (!this.isWalkable(x + dir.x, y) || !this.isWalkable(x, y + dir.y)) {
+            continue;
+          }
+        }
+        const nextIndex = toIndex(nextX, nextY);
+        if (visited[nextIndex]) continue;
+        if (!this.isWalkable(nextX, nextY)) continue;
+        visited[nextIndex] = true;
+        parent[nextIndex] = toIndex(x, y);
+        queueX.push(nextX);
+        queueY.push(nextY);
+      }
+    }
+
+    const endIndex = toIndex(endX, endY);
+    if (!visited[endIndex]) {
+      return null;
+    }
+
+    const path: Position[] = [];
+    let currentIndex = endIndex;
+    while (currentIndex !== startIndex) {
+      const x = currentIndex % width;
+      const y = Math.floor(currentIndex / width);
+      path.push({ x, y });
+      currentIndex = parent[currentIndex];
+      if (currentIndex === -1) return null;
+    }
+
+    path.reverse();
+    return path;
+  }
+
   isNextToWater(pos: Position): boolean {
     const centerX = Math.round(pos.x);
     const centerY = Math.round(pos.y);

@@ -1,8 +1,7 @@
 import Phaser from 'phaser';
-import { FleePredatorBehavior } from '../../ai/behaviors/flee-predator-behavior';
-import { SearchFoodBehavior } from '../../ai/behaviors/search-food-behavior';
+import { SearchPreyBehavior } from '../../ai/behaviors/search-prey-behavior';
 import { SearchWaterBehavior } from '../../ai/behaviors/search-water-behavior';
-import { SeekFoodBehavior } from '../../ai/behaviors/seek-food-behavior';
+import { SeekPreyBehavior } from '../../ai/behaviors/seek-prey-behavior';
 import { SeekWaterBehavior } from '../../ai/behaviors/seek-water-behavior';
 import { WanderBehavior } from '../../ai/behaviors/wander-behavior';
 import { npcSpriteConfig } from '../../config/npc-sprites';
@@ -11,7 +10,7 @@ import { WorldMap } from '../../world/world-map';
 import { EntityManager } from '../entity-manager';
 import { NPCEntity } from '../npc-entity';
 
-export class Rabbit extends NPCEntity {
+export class Wolf extends NPCEntity {
   constructor(
     scene: Phaser.Scene,
     x: number,
@@ -19,8 +18,8 @@ export class Rabbit extends NPCEntity {
     worldMap: WorldMap,
     entityManager: EntityManager,
   ) {
-    super(scene, EntityType.RABBIT, x, y, worldMap, entityManager);
-    this.perceptionRadius = 8;
+    super(scene, EntityType.WOLF, x, y, worldMap, entityManager);
+    this.perceptionRadius = 10;
     this.randomizeParameters();
   }
 
@@ -32,12 +31,12 @@ export class Rabbit extends NPCEntity {
 
   protected createSprite(): Phaser.GameObjects.Image {
     const tileSize = 48;
-    const spriteHeight = tileSize * npcSpriteConfig.rabbit.heightScale;
+    const spriteHeight = tileSize * npcSpriteConfig.wolf.heightScale;
 
     const sprite = this.scene.add.image(
       this.position.x * tileSize + tileSize / 2,
       this.position.y * tileSize + tileSize / 2,
-      'rabbit',
+      'wolf',
     );
 
     const source = sprite.texture.getSourceImage() as HTMLImageElement;
@@ -51,8 +50,8 @@ export class Rabbit extends NPCEntity {
   }
 
   protected initializeNeeds(): void {
-    const hungerRate = 0.7 + Math.random() * 0.6;
-    const thirstRate = 0.7 + Math.random() * 0.6;
+    const hungerRate = 0.8 + Math.random() * 0.6;
+    const thirstRate = 0.7 + Math.random() * 0.5;
 
     this.needs.set(NeedType.HUNGER, {
       type: NeedType.HUNGER,
@@ -69,10 +68,9 @@ export class Rabbit extends NPCEntity {
   }
 
   protected initializeBehaviors(): void {
-    this.behaviors.push(new FleePredatorBehavior());
-    this.behaviors.push(new SeekFoodBehavior());
+    this.behaviors.push(new SeekPreyBehavior());
     this.behaviors.push(new SeekWaterBehavior());
-    this.behaviors.push(new SearchFoodBehavior());
+    this.behaviors.push(new SearchPreyBehavior());
     this.behaviors.push(new SearchWaterBehavior());
     this.behaviors.push(new WanderBehavior());
   }

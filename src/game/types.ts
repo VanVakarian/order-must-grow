@@ -22,6 +22,7 @@ export interface TileData {
 
 export enum EntityType {
   RABBIT = 'RABBIT',
+  WOLF = 'WOLF',
 }
 
 export enum NeedType {
@@ -37,6 +38,7 @@ export interface Need {
 }
 
 export enum BehaviorPriority {
+  CRITICAL = 200,
   HIGH = 100,
   MEDIUM = 50,
   LOW = 10,

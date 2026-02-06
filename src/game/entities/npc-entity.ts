@@ -2,29 +2,50 @@ import Phaser from 'phaser';
 import { AIBehavior } from '../ai/ai-behavior';
 import { EntityType, Need, NeedType, Position } from '../types';
 import { WorldMap } from '../world/world-map';
+import { WorldQuery } from '../world/world-query';
 import { Entity } from './entity';
+import { EntityManager } from './entity-manager';
 
 export abstract class NPCEntity extends Entity {
   protected needs: Map<NeedType, Need>;
   protected behaviors: AIBehavior[];
   protected currentBehavior: AIBehavior | null;
   protected worldMap: WorldMap;
+  protected entityManager: EntityManager;
+  protected worldQuery: WorldQuery;
   protected targetPosition: Position | null;
+  protected path: Position[];
+  protected currentWaypoint: Position | null;
   protected moveSpeed: number;
   protected baseMoveSpeed: number;
   protected urgentMoveSpeed: number;
+  protected moveSpeedOverride: number | null;
+  protected perceptionRadius: number;
   protected lastDirection: number = 1;
 
-  constructor(scene: Phaser.Scene, type: EntityType, x: number, y: number, worldMap: WorldMap) {
+  constructor(
+    scene: Phaser.Scene,
+    type: EntityType,
+    x: number,
+    y: number,
+    worldMap: WorldMap,
+    entityManager: EntityManager,
+  ) {
     super(scene, type, x, y);
     this.needs = new Map();
     this.behaviors = [];
     this.currentBehavior = null;
     this.worldMap = worldMap;
+    this.entityManager = entityManager;
+    this.worldQuery = new WorldQuery(worldMap, entityManager);
     this.targetPosition = null;
+    this.path = [];
+    this.currentWaypoint = null;
     this.baseMoveSpeed = 1.0;
     this.urgentMoveSpeed = 3.5;
     this.moveSpeed = this.baseMoveSpeed;
+    this.moveSpeedOverride = null;
+    this.perceptionRadius = 8;
     this.initializeNeeds();
     this.initializeBehaviors();
   }
@@ -42,6 +63,11 @@ export abstract class NPCEntity extends Entity {
   }
 
   protected updateMoveSpeed(): void {
+    if (this.moveSpeedOverride !== null) {
+      this.moveSpeed = this.moveSpeedOverride;
+      return;
+    }
+
     const hunger = this.needs.get(NeedType.HUNGER);
     const thirst = this.needs.get(NeedType.THIRST);
 
@@ -80,16 +106,20 @@ export abstract class NPCEntity extends Entity {
   }
 
   protected updateMovement(deltaTime: number): void {
-    if (!this.targetPosition) return;
+    if (!this.currentWaypoint) return;
 
-    const dx = this.targetPosition.x - this.position.x;
-    const dy = this.targetPosition.y - this.position.y;
+    const dx = this.currentWaypoint.x - this.position.x;
+    const dy = this.currentWaypoint.y - this.position.y;
     const distance = Math.hypot(dx, dy);
 
     if (distance < 0.05) {
-      this.position.x = this.targetPosition.x;
-      this.position.y = this.targetPosition.y;
-      this.targetPosition = null;
+      this.position.x = this.currentWaypoint.x;
+      this.position.y = this.currentWaypoint.y;
+      if (this.path.length > 0) {
+        this.currentWaypoint = this.path.shift() as Position;
+      } else {
+        this.currentWaypoint = null;
+      }
       return;
     }
 
@@ -130,15 +160,59 @@ export abstract class NPCEntity extends Entity {
   }
 
   setTargetPosition(target: Position | null): void {
+    if (!target) {
+      this.targetPosition = null;
+      this.path = [];
+      this.currentWaypoint = null;
+      return;
+    }
+
+    const start = { x: Math.round(this.position.x), y: Math.round(this.position.y) };
+    const end = { x: Math.round(target.x), y: Math.round(target.y) };
+
+    const path = this.worldMap.findPath(start, end);
+    if (!path) {
+      this.targetPosition = null;
+      this.path = [];
+      this.currentWaypoint = null;
+      return;
+    }
+
     this.targetPosition = target;
+    this.path = path;
+    this.currentWaypoint = this.path.shift() ?? null;
   }
 
   getTargetPosition(): Position | null {
     return this.targetPosition;
   }
 
+  setMoveSpeedOverride(value: number | null): void {
+    this.moveSpeedOverride = value;
+  }
+
+  getUrgentMoveSpeed(): number {
+    return this.urgentMoveSpeed;
+  }
+
+  getBaseMoveSpeed(): number {
+    return this.baseMoveSpeed;
+  }
+
   getWorldMap(): WorldMap {
     return this.worldMap;
+  }
+
+  getWorldQuery(): WorldQuery {
+    return this.worldQuery;
+  }
+
+  getEntityManager(): EntityManager {
+    return this.entityManager;
+  }
+
+  getPerceptionRadius(): number {
+    return this.perceptionRadius;
   }
 
   getCurrentBehaviorName(): string {
