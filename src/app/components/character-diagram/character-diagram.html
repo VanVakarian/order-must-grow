@@ -1,0 +1,63 @@
+<button type="button"
+        class="diagram-toggle"
+        (click)="toggle()">
+  Body Map <span class="key-hint">C</span>
+</button>
+
+@if (isOpen$$()) {
+  <div class="diagram-backdrop"
+       (click)="close()">
+    <div class="diagram-panel"
+         (click)="$event.stopPropagation()">
+      <div class="panel-header">
+        <span class="title">Body Map</span>
+        <button type="button"
+                class="close-btn"
+                (click)="close()">✕</button>
+      </div>
+
+      <svg class="body-svg"
+           viewBox="0 0 200 360">
+        @for (part of shapes; track part.type) {
+          @if (part.shape === 'rect') {
+            <rect class="part-shape"
+                  [class.hovered]="hoveredType$$() === part.type"
+                  [attr.x]="part.x"
+                  [attr.y]="part.y"
+                  [attr.width]="part.width"
+                  [attr.height]="part.height"
+                  [attr.rx]="part.rx"
+                  [style.fill]="getShapeColor(part.type)"
+                  (mouseenter)="onHover(part.type)"
+                  (mouseleave)="onLeaveHover()" />
+          } @else {
+            <ellipse class="part-shape"
+                     [class.hovered]="hoveredType$$() === part.type"
+                     [attr.cx]="part.cx"
+                     [attr.cy]="part.cy"
+                     [attr.rx]="part.rx"
+                     [attr.ry]="part.ry"
+                     [style.fill]="getShapeColor(part.type)"
+                     (mouseenter)="onHover(part.type)"
+                     (mouseleave)="onLeaveHover()" />
+          }
+        }
+      </svg>
+
+      <div class="tooltip">
+        @if (hoveredPart(); as part) {
+          <span class="tooltip-label">{{ part.label }}</span>
+          @if (part.vital) {
+            <span class="vital-tag">vital</span>
+          }
+          <span class="tooltip-status"
+                [style.color]="getPartColor(part.healthRatio, part.destroyed)">
+            {{ part.destroyed ? 'destroyed' : (part.healthRatio * 100 | number:'1.0-0') + '%' }}
+          </span>
+        } @else {
+          <span class="tooltip-placeholder">Hover a body part</span>
+        }
+      </div>
+    </div>
+  </div>
+}

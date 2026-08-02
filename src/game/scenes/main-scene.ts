@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { EntityManager } from '../entities/entity-manager';
-import { Rabbit } from '../entities/npcs/rabbit';
-import { Wolf } from '../entities/npcs/wolf';
+import { Player } from '../entities/player';
+import { generateHumanoidTextures, HumanoidBodyType } from '../rendering/humanoid-sprite-generator';
+import { StatType } from '../stats/stat-type';
 import { TileType } from '../types';
 import { WorldMap } from '../world/world-map';
 
@@ -11,13 +12,9 @@ enum TextureKey {
   TILE_GRASS = 'tile-grass',
   TILE_WATER = 'tile-water',
   SELECTION_MARKER = 'selection-marker',
+  TILE_FOG = 'tile-fog',
   RABBIT = 'rabbit',
   WOLF = 'wolf',
-}
-
-enum ZoomAnchorMode {
-  CURSOR,
-  CENTER,
 }
 
 export class MainScene extends Phaser.Scene {
@@ -28,31 +25,24 @@ export class MainScene extends Phaser.Scene {
   private worldMap!: WorldMap;
   private entityManager!: EntityManager;
   private tileSprites: Map<string, Phaser.GameObjects.Image> = new Map();
+  private tileFogSprites: Map<string, Phaser.GameObjects.Image> = new Map();
+  private tileFogAmount: Map<string, number> = new Map();
+  private player!: Player;
 
   private minZoom = 0.5;
   private maxZoom = 4;
   private zoomSpeed = 0.0015;
-
-  private zoomAnchorMode: ZoomAnchorMode = ZoomAnchorMode.CENTER;
-  // private zoomAnchorMode: ZoomAnchorMode = ZoomAnchorMode.CURSOR;
-
-  private isDragging = false;
-  private dragStartX = 0;
-  private dragStartY = 0;
-  private cameraStartScrollX = 0;
-  private cameraStartScrollY = 0;
-
-  private wasd!: {
-    up: Phaser.Input.Keyboard.Key;
-    down: Phaser.Input.Keyboard.Key;
-    left: Phaser.Input.Keyboard.Key;
-    right: Phaser.Input.Keyboard.Key;
-  };
-  private keyboardSpeed = 0.6;
+  private cameraLerp = 0.08;
 
   private selectionMarker!: Phaser.GameObjects.Image;
 
   private highlightedNPCId: string | null = null;
+
+  private readonly fovAngle = Phaser.Math.DegToRad(110);
+  private readonly fogColor = 0x6f7378;
+  private readonly fogMaxAlpha = 0.5;
+  private readonly fogFadeOutDurationMs = 2000;
+  private readonly fogFadeInDurationMs = 100;
 
   constructor() {
     super({ key: 'MainScene' });
@@ -62,7 +52,9 @@ export class MainScene extends Phaser.Scene {
     this.load.image(TextureKey.RABBIT, 'assets/sprites/rabbit.png');
     this.load.image(TextureKey.WOLF, 'assets/sprites/wolf.png');
     this.createTileGraphics();
+    this.createTileFogGraphics();
     this.createSelectionMarkerGraphics();
+    generateHumanoidTextures(this, HumanoidBodyType.MALE);
   }
 
   private create() {
@@ -70,18 +62,17 @@ export class MainScene extends Phaser.Scene {
     this.entityManager = new EntityManager();
 
     this.createMap();
+    this.spawnPlayer();
     this.setupCamera();
     this.setupInput();
     this.createSelectionMarker();
-    this.spawnRabbits();
-    this.spawnWolves();
   }
 
   override update(_time: number, delta: number) {
-    this.handleKeyboardInput(delta);
     this.updateSelectionMarker();
     this.entityManager.update(delta);
     this.updateTileVisuals();
+    this.updateTileFog(delta);
   }
 
   private createTileGraphics() {
@@ -114,6 +105,14 @@ export class MainScene extends Phaser.Scene {
     graphics.strokeRect(0, 0, this.tileSize, this.tileSize);
     graphics.generateTexture(TextureKey.TILE_WATER, this.tileSize, this.tileSize);
 
+    graphics.destroy();
+  }
+
+  private createTileFogGraphics() {
+    const graphics = this.add.graphics();
+    graphics.fillStyle(this.fogColor, 1);
+    graphics.fillRect(0, 0, this.tileSize, this.tileSize);
+    graphics.generateTexture(TextureKey.TILE_FOG, this.tileSize, this.tileSize);
     graphics.destroy();
   }
 
@@ -178,7 +177,15 @@ export class MainScene extends Phaser.Scene {
         tile.setOrigin(0, 0);
         tile.setDepth(0);
 
-        this.tileSprites.set(`${x},${y}`, tile);
+        const fog = this.add.image(worldX, worldY, TextureKey.TILE_FOG);
+        fog.setOrigin(0, 0);
+        fog.setDepth(1);
+        fog.setAlpha(this.fogMaxAlpha);
+
+        const key = `${x},${y}`;
+        this.tileSprites.set(key, tile);
+        this.tileFogSprites.set(key, fog);
+        this.tileFogAmount.set(key, 1);
       }
     }
   }
@@ -213,44 +220,19 @@ export class MainScene extends Phaser.Scene {
     }
   }
 
-  private spawnRabbits(): void {
-    const numRabbits = 5;
+  private spawnPlayer(): void {
+    let x = Math.floor(this.mapWidthInTiles / 2);
+    let y = Math.floor(this.mapHeightInTiles / 2);
+    let attempts = 0;
 
-    for (let i = 0; i < numRabbits; i++) {
-      let x, y;
-      let attempts = 0;
-
-      do {
-        x = Math.floor(Math.random() * this.mapWidthInTiles);
-        y = Math.floor(Math.random() * this.mapHeightInTiles);
-        attempts++;
-      } while (!this.worldMap.isWalkable(x, y) && attempts < 100);
-
-      if (attempts < 100) {
-        const rabbit = new Rabbit(this, x, y, this.worldMap, this.entityManager);
-        this.entityManager.addEntity(rabbit);
-      }
+    while (!this.worldMap.isWalkable(x, y) && attempts < 200) {
+      x = Math.floor(Math.random() * this.mapWidthInTiles);
+      y = Math.floor(Math.random() * this.mapHeightInTiles);
+      attempts++;
     }
-  }
 
-  private spawnWolves(): void {
-    const numWolves = 2;
-
-    for (let i = 0; i < numWolves; i++) {
-      let x, y;
-      let attempts = 0;
-
-      do {
-        x = Math.floor(Math.random() * this.mapWidthInTiles);
-        y = Math.floor(Math.random() * this.mapHeightInTiles);
-        attempts++;
-      } while (!this.worldMap.isWalkable(x, y) && attempts < 100);
-
-      if (attempts < 100) {
-        const wolf = new Wolf(this, x, y, this.worldMap, this.entityManager);
-        this.entityManager.addEntity(wolf);
-      }
-    }
+    this.player = new Player(this, x, y, this.worldMap);
+    this.entityManager.addEntity(this.player);
   }
 
   private createSelectionMarker() {
@@ -260,13 +242,47 @@ export class MainScene extends Phaser.Scene {
     this.selectionMarker.setVisible(false);
   }
 
+  private updateTileFog(deltaMs: number): void {
+    const sprite = this.player.getSprite();
+    const centerX = sprite.x;
+    const centerY = sprite.y;
+    const facingAngle = this.player.getFacingAngle();
+    const halfAngle = this.fovAngle / 2;
+    const sightRange = this.player.getStats().getValue(StatType.SIGHT_RANGE);
+
+    const fadeOutStep = deltaMs / this.fogFadeOutDurationMs;
+    const fadeInStep = deltaMs / this.fogFadeInDurationMs;
+
+    for (const [key, fog] of this.tileFogSprites) {
+      const tileCenterX = fog.x + this.tileSize / 2;
+      const tileCenterY = fog.y + this.tileSize / 2;
+      const dx = tileCenterX - centerX;
+      const dy = tileCenterY - centerY;
+      const distance = Math.hypot(dx, dy);
+
+      let angleDiff = Math.atan2(dy, dx) - facingAngle;
+      angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff)); // normalize to [-PI, PI]
+
+      const isVisible = distance <= sightRange && Math.abs(angleDiff) <= halfAngle;
+      const targetAmount = isVisible ? 0 : 1;
+
+      const currentAmount = this.tileFogAmount.get(key) ?? 1;
+      const nextAmount =
+        targetAmount < currentAmount
+          ? Math.max(targetAmount, currentAmount - fadeInStep)
+          : Math.min(targetAmount, currentAmount + fadeOutStep);
+
+      if (nextAmount !== currentAmount) {
+        this.tileFogAmount.set(key, nextAmount);
+        fog.setAlpha(nextAmount * this.fogMaxAlpha);
+      }
+    }
+  }
+
   private setupCamera() {
     const camera = this.cameras.main;
     camera.setZoom(1.5);
-
-    const worldWidth = this.mapWidthInTiles * this.tileSize;
-    const worldHeight = this.mapHeightInTiles * this.tileSize;
-    camera.centerOn(worldWidth / 2, worldHeight / 2);
+    camera.startFollow(this.player.getSprite(), false, this.cameraLerp, this.cameraLerp);
   }
 
   private setupInput() {
@@ -276,123 +292,15 @@ export class MainScene extends Phaser.Scene {
       Phaser.Input.Events.POINTER_WHEEL,
       (pointer: Phaser.Input.Pointer, _gameObjects: unknown[], _dx: number, dy: number) => {
         (pointer.event as any)?.preventDefault?.();
-        (pointer.event as any)?.stopPropagation?.();
-
-        this.scale.updateBounds();
-
-        const eventTarget = (pointer.event as any)?.target;
-        const isCanvasTarget = eventTarget === this.game.canvas;
-        if (!isCanvasTarget) return;
-
-        const worldWidth = this.mapWidthInTiles * this.tileSize;
-        const worldHeight = this.mapHeightInTiles * this.tileSize;
-
-        const rawOffsetX = (pointer.event as any)?.offsetX;
-        const rawOffsetY = (pointer.event as any)?.offsetY;
-
-        const displayW = this.scale.displaySize?.width ?? this.scale.gameSize.width;
-        const displayH = this.scale.displaySize?.height ?? this.scale.gameSize.height;
-
-        const screenX =
-          typeof rawOffsetX === 'number'
-            ? (rawOffsetX / displayW) * this.scale.gameSize.width
-            : pointer.x;
-        const screenY =
-          typeof rawOffsetY === 'number'
-            ? (rawOffsetY / displayH) * this.scale.gameSize.height
-            : pointer.y;
-
-        const cursorWorld = this.screenToWorld(camera, screenX, screenY, camera.zoom);
-        cursorWorld.x >= 0 &&
-          cursorWorld.y >= 0 &&
-          cursorWorld.x < worldWidth &&
-          cursorWorld.y < worldHeight;
-
-        const anchorScreenX =
-          this.zoomAnchorMode === ZoomAnchorMode.CENTER ? camera.width / 2 : screenX;
-        const anchorScreenY =
-          this.zoomAnchorMode === ZoomAnchorMode.CENTER ? camera.height / 2 : screenY;
-
-        const previousZoom = camera.zoom;
-        const before = this.screenToWorld(camera, anchorScreenX, anchorScreenY, previousZoom);
 
         const nextZoom = Phaser.Math.Clamp(
-          previousZoom * (1 - dy * this.zoomSpeed),
+          camera.zoom * (1 - dy * this.zoomSpeed),
           this.minZoom,
           this.maxZoom,
         );
-
-        if (nextZoom === previousZoom) return;
-
         camera.setZoom(nextZoom);
-
-        const nextScroll = this.worldToScroll(
-          camera,
-          before.x,
-          before.y,
-          anchorScreenX,
-          anchorScreenY,
-          nextZoom,
-        );
-        camera.setScroll(nextScroll.x, nextScroll.y);
       },
     );
-
-    this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
-      this.isDragging = true;
-      this.dragStartX = pointer.x;
-      this.dragStartY = pointer.y;
-      this.cameraStartScrollX = camera.scrollX;
-      this.cameraStartScrollY = camera.scrollY;
-    });
-
-    this.input.on(Phaser.Input.Events.POINTER_UP, () => {
-      this.isDragging = false;
-    });
-
-    this.input.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, () => {
-      this.isDragging = false;
-    });
-
-    this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => {
-      if (!this.isDragging) return;
-
-      const dx = (pointer.x - this.dragStartX) / camera.zoom;
-      const dy = (pointer.y - this.dragStartY) / camera.zoom;
-
-      camera.scrollX = this.cameraStartScrollX - dx;
-      camera.scrollY = this.cameraStartScrollY - dy;
-    });
-
-    if (this.input.keyboard) {
-      this.wasd = this.input.keyboard.addKeys({
-        up: Phaser.Input.Keyboard.KeyCodes.W,
-        down: Phaser.Input.Keyboard.KeyCodes.S,
-        left: Phaser.Input.Keyboard.KeyCodes.A,
-        right: Phaser.Input.Keyboard.KeyCodes.D,
-      }) as any;
-    }
-  }
-
-  private handleKeyboardInput(delta: number) {
-    if (!this.wasd) return;
-
-    const camera = this.cameras.main;
-    let moveX = 0;
-    let moveY = 0;
-
-    if (this.wasd.left.isDown) moveX -= 1;
-    if (this.wasd.right.isDown) moveX += 1;
-    if (this.wasd.up.isDown) moveY -= 1;
-    if (this.wasd.down.isDown) moveY += 1;
-
-    if (moveX !== 0 || moveY !== 0) {
-      const movement = new Phaser.Math.Vector2(moveX, moveY)
-        .normalize()
-        .scale(this.keyboardSpeed * delta);
-      camera.scrollX += movement.x / camera.zoom;
-      camera.scrollY += movement.y / camera.zoom;
-    }
   }
 
   private updateSelectionMarker() {
@@ -465,24 +373,12 @@ export class MainScene extends Phaser.Scene {
     );
   }
 
-  private worldToScroll(
-    camera: Phaser.Cameras.Scene2D.Camera,
-    worldX: number,
-    worldY: number,
-    screenX: number,
-    screenY: number,
-    zoom: number,
-  ) {
-    const centerWorldX = worldX - (screenX - camera.width / 2) / zoom;
-    const centerWorldY = worldY - (screenY - camera.height / 2) / zoom;
-    return new Phaser.Math.Vector2(
-      centerWorldX - camera.width / 2,
-      centerWorldY - camera.height / 2,
-    );
-  }
-
   getEntityManager(): EntityManager {
     return this.entityManager;
+  }
+
+  getPlayer(): Player {
+    return this.player;
   }
 
   focusOnEntity(entityId: string): void {

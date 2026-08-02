@@ -1,0 +1,13 @@
+export enum BodyPartType {
+  TORSO = 'TORSO',
+  NECK = 'NECK',
+  HEAD = 'HEAD',
+  BRAIN = 'BRAIN',
+  LEFT_EYE = 'LEFT_EYE',
+  RIGHT_EYE = 'RIGHT_EYE',
+  HEART = 'HEART',
+  LEFT_ARM = 'LEFT_ARM',
+  RIGHT_ARM = 'RIGHT_ARM',
+  LEFT_LEG = 'LEFT_LEG',
+  RIGHT_LEG = 'RIGHT_LEG',
+}

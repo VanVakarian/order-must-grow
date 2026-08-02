@@ -21,6 +21,7 @@ export interface TileData {
 }
 
 export enum EntityType {
+  PLAYER = 'PLAYER',
   RABBIT = 'RABBIT',
   WOLF = 'WOLF',
 }

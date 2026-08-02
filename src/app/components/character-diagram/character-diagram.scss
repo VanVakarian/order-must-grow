@@ -1,0 +1,132 @@
+.diagram-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #e0e0e0;
+  padding: 10px 14px;
+  cursor: pointer;
+  z-index: 1000;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .key-hint {
+    margin-left: 6px;
+    opacity: 0.6;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    padding: 0 4px;
+    font-size: 10px;
+  }
+}
+
+.diagram-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+}
+
+.diagram-panel {
+  width: 320px;
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  font-family: 'Courier New', monospace;
+  color: #e0e0e0;
+}
+
+.panel-header {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+  .title {
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0.6;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+.body-svg {
+  display: block;
+  width: 100%;
+  height: 380px;
+  padding: 12px 0;
+
+  .part-shape {
+    cursor: pointer;
+    stroke: rgba(255, 255, 255, 0.25);
+    stroke-width: 1;
+    opacity: 0.85;
+    transition:
+      opacity 0.15s,
+      stroke 0.15s,
+      stroke-width 0.15s;
+
+    &:hover,
+    &.hovered {
+      opacity: 1;
+      stroke: #fff;
+      stroke-width: 2;
+    }
+  }
+}
+
+.tooltip {
+  min-height: 32px;
+  padding: 8px 16px 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+  .tooltip-label {
+    font-weight: 500;
+    flex: 1;
+  }
+
+  .vital-tag {
+    font-size: 9px;
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.5);
+    border-radius: 3px;
+    padding: 0 4px;
+  }
+
+  .tooltip-status {
+    font-weight: 500;
+  }
+
+  .tooltip-placeholder {
+    color: #888;
+    font-style: italic;
+  }
+}

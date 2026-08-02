@@ -1,0 +1,5 @@
+export enum StatType {
+  MOVE_SPEED = 'MOVE_SPEED',
+  SIGHT_RANGE = 'SIGHT_RANGE',
+  AIM_ACCURACY = 'AIM_ACCURACY',
+}
