@@ -7,6 +7,7 @@ export interface BodyPartTemplate {
   maxHealth: number;
   vital: boolean;
   bleedRateMultiplier: number;
+  hitChanceWeight: number;
 }
 
 export type BodyPlan = BodyPartTemplate[];

@@ -25,6 +25,7 @@ export enum EntityType {
   PLAYER = 'PLAYER',
   RABBIT = 'RABBIT',
   WOLF = 'WOLF',
+  ENEMY = 'ENEMY',
 }
 
 export enum NeedType {

@@ -11,7 +11,9 @@ export const PLAYER_AIM_ACCURACY = 1;
 
 export const RENDER_DEPTH_TILE = 0;
 export const RENDER_DEPTH_FOG = 1;
+export const RENDER_DEPTH_WEAPON_BEHIND = 9;
 export const RENDER_DEPTH_ENTITY_SPRITE = 10;
+export const RENDER_DEPTH_WEAPON_FRONT = 11;
 export const RENDER_DEPTH_SELECTION_MARKER = 100;
 export const RENDER_DEPTH_HIGHLIGHT_FRAME = 101;
 
@@ -25,6 +27,7 @@ export const HUMANOID_SIDE_TORSO_WIDTH = 20;
 export const HUMANOID_TORSO_HEIGHT = 28;
 export const HUMANOID_TORSO_RADIUS = 9;
 export const HUMANOID_MAX_LEAN_ANGLE = Phaser.Math.DegToRad(12);
+export const HUMANOID_FRONT_FACING_ANGLE = Math.PI / 2;
 export const HUMANOID_SKIN_COLOR = 0xe8dcc8;
 export const HUMANOID_OUTLINE_COLOR = 0x2f2f2f;
 export const HUMANOID_OUTLINE_WIDTH = 2;
@@ -168,3 +171,23 @@ export const BLOOD_COLOR_MEDIUM = '#fbbf24';
 export const BLOOD_COLOR_LOW = '#f87171';
 
 export const DEBUG_UI_POLL_INTERVAL_MS = 100;
+
+export const KNIFE_DAMAGE = 8;
+export const KNIFE_ATTACK_RANGE_TILES = 1;
+export const KNIFE_ATTACK_COOLDOWN_MS = 700;
+export const KNIFE_SPRITE_LENGTH_SCALE = 0.5;
+
+export const WEAPON_SPRITE_ORIGIN_X = 0.25;
+export const WEAPON_SPRITE_ORIGIN_Y = 0.5;
+export const WEAPON_HAND_OFFSET_X_PX = 12;
+export const WEAPON_HAND_OFFSET_Y_PX = 8;
+export const WEAPON_PROFILE_OFFSET_X_PX = 3;
+export const WEAPON_MOVE_SWAY_OFFSET_PX = 3;
+
+export const ATTACK_THRUST_DISTANCE_PX = 10;
+export const ATTACK_THRUST_DURATION_MS = 120;
+export const ATTACK_SLASH_ANGLE_RAD = Phaser.Math.DegToRad(50);
+export const ATTACK_SLASH_DURATION_MS = 150;
+
+export const ENEMY_TINT_COLOR = 0xd05050;
+export const ENEMY_SPAWN_OFFSET_TILES = 3;

@@ -6,6 +6,7 @@ import {
   CAMERA_MAX_ZOOM,
   CAMERA_MIN_ZOOM,
   CAMERA_ZOOM_WHEEL_SPEED,
+  ENEMY_SPAWN_OFFSET_TILES,
   ENTITY_HOVER_HIT_PADDING,
   FOG_COLOR,
   FOG_FADE_IN_DURATION_MS,
@@ -35,6 +36,7 @@ import {
   TILE_COLOR_WATER,
   TILE_SIZE_PX,
 } from '../const';
+import { Enemy } from '../entities/enemy';
 import { EntityManager } from '../entities/entity-manager';
 import { Player } from '../entities/player';
 import { generateHumanoidTextures, HumanoidBodyType } from '../rendering/humanoid-sprite-generator';
@@ -51,6 +53,7 @@ enum TextureKey {
   TILE_FOG = 'tile-fog',
   RABBIT = 'rabbit',
   WOLF = 'wolf',
+  KNIFE = 'knife',
 }
 
 export class MainScene extends Phaser.Scene {
@@ -92,6 +95,7 @@ export class MainScene extends Phaser.Scene {
   private preload() {
     this.load.image(TextureKey.RABBIT, 'assets/sprites/rabbit.png');
     this.load.image(TextureKey.WOLF, 'assets/sprites/wolf.png');
+    this.load.image(TextureKey.KNIFE, 'assets/sprites/knife.png');
     this.createTileGraphics();
     this.createTileFogGraphics();
     this.createSelectionMarkerGraphics();
@@ -103,6 +107,7 @@ export class MainScene extends Phaser.Scene {
     this.entityManager = new EntityManager();
 
     this.spawnPlayer();
+    this.spawnEnemy();
     this.setupCamera();
     this.setupInput();
     this.createSelectionMarker();
@@ -315,25 +320,37 @@ export class MainScene extends Phaser.Scene {
 
   private spawnPlayer(): void {
     const spawnPosition = this.findWalkableSpawnPosition();
-    this.player = new Player(this, spawnPosition.x, spawnPosition.y, this.worldMap);
+    this.player = new Player(this, spawnPosition.x, spawnPosition.y, this.worldMap, this.entityManager);
     this.entityManager.addEntity(this.player);
   }
 
-  private findWalkableSpawnPosition(): Position {
-    if (this.worldMap.isWalkable(0, 0)) {
-      return { x: 0, y: 0 };
+  private spawnEnemy(): void {
+    const playerPosition = this.player.getPosition();
+    const spawnPosition = this.findWalkableSpawnPosition(
+      Math.round(playerPosition.x) + ENEMY_SPAWN_OFFSET_TILES,
+      Math.round(playerPosition.y),
+    );
+    const enemy = new Enemy(this, spawnPosition.x, spawnPosition.y);
+    this.entityManager.addEntity(enemy);
+  }
+
+  private findWalkableSpawnPosition(centerX = 0, centerY = 0): Position {
+    if (this.worldMap.isWalkable(centerX, centerY)) {
+      return { x: centerX, y: centerY };
     }
 
     for (let radius = 1; radius <= SPAWN_SEARCH_MAX_RADIUS_TILES; radius++) {
       for (let dx = -radius; dx <= radius; dx++) {
         for (let dy = -radius; dy <= radius; dy++) {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
-          if (this.worldMap.isWalkable(dx, dy)) return { x: dx, y: dy };
+          if (this.worldMap.isWalkable(centerX + dx, centerY + dy)) {
+            return { x: centerX + dx, y: centerY + dy };
+          }
         }
       }
     }
 
-    return { x: 0, y: 0 };
+    return { x: centerX, y: centerY };
   }
 
   private createSelectionMarker() {

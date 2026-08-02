@@ -8,6 +8,7 @@ export class BodyPart {
   readonly maxHealth: number;
   readonly vital: boolean;
   readonly bleedRateMultiplier: number;
+  readonly hitChanceWeight: number;
 
   private health: number;
   private destroyed = false;
@@ -19,6 +20,7 @@ export class BodyPart {
     this.maxHealth = template.maxHealth;
     this.vital = template.vital;
     this.bleedRateMultiplier = template.bleedRateMultiplier;
+    this.hitChanceWeight = template.hitChanceWeight;
     this.health = template.maxHealth;
   }
 
@@ -46,4 +48,16 @@ export class BodyPart {
   getHealthRatio(): number {
     return this.health / this.maxHealth;
   }
+}
+
+export function pickRandomBodyPart(parts: BodyPart[]): BodyPartType {
+  const totalWeight = parts.reduce((sum, part) => sum + part.hitChanceWeight, 0);
+  let roll = Math.random() * totalWeight;
+
+  for (const part of parts) {
+    roll -= part.hitChanceWeight;
+    if (roll <= 0) return part.type;
+  }
+
+  return parts[parts.length - 1].type;
 }

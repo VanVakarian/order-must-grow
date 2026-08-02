@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { WeaponType } from '../combat/weapon-type';
 import {
   HUMANOID_MAX_LEAN_ANGLE,
   PLAYER_AIM_ACCURACY,
@@ -7,6 +8,7 @@ import {
   PLAYER_SIGHT_RANGE,
   RENDER_DEPTH_ENTITY_SPRITE,
   TILE_SIZE_PX,
+  WEAPON_MOVE_SWAY_OFFSET_PX,
 } from '../const';
 import { HUMANOID_BODY_PLAN } from '../health/body-plans/humanoid';
 import {
@@ -18,20 +20,28 @@ import {
 import { StatType } from '../stats/stat-type';
 import { EntityType } from '../types';
 import { WorldMap } from '../world/world-map';
+import { WorldQuery } from '../world/world-query';
 import { Character } from './character';
+import { EntityManager } from './entity-manager';
 
 export class Player extends Character {
   private readonly worldMap: WorldMap;
+  private readonly worldQuery: WorldQuery;
   private readonly wasd: {
     up: Phaser.Input.Keyboard.Key;
     down: Phaser.Input.Keyboard.Key;
     left: Phaser.Input.Keyboard.Key;
     right: Phaser.Input.Keyboard.Key;
   };
-  private facingAngle = 0;
   private moveDirection = new Phaser.Math.Vector2(0, 0);
 
-  constructor(scene: Phaser.Scene, x: number, y: number, worldMap: WorldMap) {
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    worldMap: WorldMap,
+    entityManager: EntityManager,
+  ) {
     super(
       scene,
       EntityType.PLAYER,
@@ -45,12 +55,15 @@ export class Player extends Character {
       HUMANOID_BODY_PLAN,
     );
     this.worldMap = worldMap;
+    this.worldQuery = new WorldQuery(worldMap, entityManager);
     this.wasd = scene.input.keyboard!.addKeys({
       up: Phaser.Input.Keyboard.KeyCodes.W,
       down: Phaser.Input.Keyboard.KeyCodes.S,
       left: Phaser.Input.Keyboard.KeyCodes.A,
       right: Phaser.Input.Keyboard.KeyCodes.D,
     }) as any;
+    this.equipWeapon(WeaponType.KNIFE);
+    this.setupAttackInput();
   }
 
   protected createSprite(): Phaser.GameObjects.Image {
@@ -71,14 +84,12 @@ export class Player extends Character {
       this.updateFacing();
       this.updateMovement(deltaTime);
       this.updateSpriteLean();
+      this.weaponSwayOffsetX = WEAPON_MOVE_SWAY_OFFSET_PX * Math.sign(this.moveDirection.x);
     }
 
     this.updateSpritePosition();
+    this.tickCombat(deltaTime);
     this.updateHighlightFrame();
-  }
-
-  getFacingAngle(): number {
-    return this.facingAngle;
   }
 
   private updateFacing(): void {
@@ -145,5 +156,23 @@ export class Player extends Character {
       this.position.x * tileSize + tileSize / 2,
       this.position.y * tileSize + tileSize / 2,
     );
+  }
+
+  private setupAttackInput(): void {
+    this.scene.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
+      if (!pointer.leftButtonDown() || (pointer.event as MouseEvent | undefined)?.ctrlKey) return;
+      if (this.health.isDead()) return;
+
+      const weapon = this.combat.getWeapon();
+      if (!weapon) return;
+
+      const target = this.worldQuery.findNearestEntity(
+        this.position,
+        weapon.attackRangeTiles,
+        (entity) => entity.getType() === EntityType.ENEMY,
+      ) as Character | null;
+
+      this.tryAttack(target);
+    });
   }
 }
