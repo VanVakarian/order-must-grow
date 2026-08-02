@@ -4,7 +4,21 @@ import { SearchWaterBehavior } from '../../ai/behaviors/search-water-behavior';
 import { SeekPreyBehavior } from '../../ai/behaviors/seek-prey-behavior';
 import { SeekWaterBehavior } from '../../ai/behaviors/seek-water-behavior';
 import { WanderBehavior } from '../../ai/behaviors/wander-behavior';
-import { npcSpriteConfig } from '../../config/npc-sprites';
+import {
+  RENDER_DEPTH_ENTITY_SPRITE,
+  TILE_SIZE_PX,
+  WOLF_BASE_MOVE_SPEED_MIN,
+  WOLF_BASE_MOVE_SPEED_RANDOM_RANGE,
+  WOLF_HUNGER_RATE_MIN,
+  WOLF_HUNGER_RATE_RANDOM_RANGE,
+  WOLF_NEED_THRESHOLD,
+  WOLF_PERCEPTION_RADIUS,
+  WOLF_SPRITE_HEIGHT_SCALE,
+  WOLF_THIRST_RATE_MIN,
+  WOLF_THIRST_RATE_RANDOM_RANGE,
+  WOLF_URGENT_MOVE_SPEED_MIN,
+  WOLF_URGENT_MOVE_SPEED_RANDOM_RANGE,
+} from '../../const';
 import { EntityType, NeedType } from '../../types';
 import { WorldMap } from '../../world/world-map';
 import { EntityManager } from '../entity-manager';
@@ -19,19 +33,19 @@ export class Wolf extends NPCEntity {
     entityManager: EntityManager,
   ) {
     super(scene, EntityType.WOLF, x, y, worldMap, entityManager);
-    this.perceptionRadius = 10;
+    this.perceptionRadius = WOLF_PERCEPTION_RADIUS;
     this.randomizeParameters();
   }
 
   private randomizeParameters(): void {
-    this.baseMoveSpeed = 0.9 + Math.random() * 0.2;
-    this.urgentMoveSpeed = 3.0 + Math.random() * 0.6;
+    this.baseMoveSpeed = WOLF_BASE_MOVE_SPEED_MIN + Math.random() * WOLF_BASE_MOVE_SPEED_RANDOM_RANGE;
+    this.urgentMoveSpeed = WOLF_URGENT_MOVE_SPEED_MIN + Math.random() * WOLF_URGENT_MOVE_SPEED_RANDOM_RANGE;
     this.moveSpeed = this.baseMoveSpeed;
   }
 
   protected createSprite(): Phaser.GameObjects.Image {
-    const tileSize = 48;
-    const spriteHeight = tileSize * npcSpriteConfig.wolf.heightScale;
+    const tileSize = TILE_SIZE_PX;
+    const spriteHeight = tileSize * WOLF_SPRITE_HEIGHT_SCALE;
 
     const sprite = this.scene.add.image(
       this.position.x * tileSize + tileSize / 2,
@@ -44,25 +58,25 @@ export class Wolf extends NPCEntity {
     const spriteWidth = spriteHeight * ratio;
 
     sprite.setDisplaySize(spriteWidth, spriteHeight);
-    sprite.setDepth(10);
+    sprite.setDepth(RENDER_DEPTH_ENTITY_SPRITE);
 
     return sprite;
   }
 
   protected initializeNeeds(): void {
-    const hungerRate = 0.8 + Math.random() * 0.6;
-    const thirstRate = 0.7 + Math.random() * 0.5;
+    const hungerRate = WOLF_HUNGER_RATE_MIN + Math.random() * WOLF_HUNGER_RATE_RANDOM_RANGE;
+    const thirstRate = WOLF_THIRST_RATE_MIN + Math.random() * WOLF_THIRST_RATE_RANDOM_RANGE;
 
     this.needs.set(NeedType.HUNGER, {
       type: NeedType.HUNGER,
       value: 0,
-      threshold: 60,
+      threshold: WOLF_NEED_THRESHOLD,
       changeRate: hungerRate,
     });
     this.needs.set(NeedType.THIRST, {
       type: NeedType.THIRST,
       value: 0,
-      threshold: 60,
+      threshold: WOLF_NEED_THRESHOLD,
       changeRate: thirstRate,
     });
   }

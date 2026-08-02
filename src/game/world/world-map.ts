@@ -1,3 +1,12 @@
+import {
+  PATHFINDING_MIN_SEARCH_RADIUS,
+  PATHFINDING_SEARCH_RADIUS_MARGIN,
+  WATER_ADJACENCY_MAX_DISTANCE,
+  WORLD_STONE_NOISE_THRESHOLD,
+  WORLD_VEGETATION_INITIAL_GROWTH_STAGE,
+  WORLD_VEGETATION_SPAWN_CHANCE,
+  WORLD_WATER_NOISE_THRESHOLD,
+} from '../const';
 import { Position, TileData, TileType, VegetationType } from '../types';
 
 export class WorldMap {
@@ -24,10 +33,10 @@ export class WorldMap {
     const tileType = this.generateTileType(x, y);
     const tile: TileData = { x, y, type: tileType, vegetation: null, everSeen: false };
 
-    if (tileType === TileType.DIRT && Math.random() < 0.3) {
+    if (tileType === TileType.DIRT && Math.random() < WORLD_VEGETATION_SPAWN_CHANCE) {
       tile.vegetation = {
         type: VegetationType.GRASS,
-        growthStage: 1,
+        growthStage: WORLD_VEGETATION_INITIAL_GROWTH_STAGE,
       };
     }
 
@@ -38,10 +47,10 @@ export class WorldMap {
     const noise = this.perlinNoise(x * 0.1, y * 0.1);
     const waterNoise = this.perlinNoise(x * 0.15 + 100, y * 0.15 + 100);
 
-    if (waterNoise > 0.5) {
+    if (waterNoise > WORLD_WATER_NOISE_THRESHOLD) {
       return TileType.WATER;
     }
-    return noise > 0.3 ? TileType.STONE : TileType.DIRT;
+    return noise > WORLD_STONE_NOISE_THRESHOLD ? TileType.STONE : TileType.DIRT;
   }
 
   private perlinNoise(x: number, y: number): number {
@@ -103,7 +112,10 @@ export class WorldMap {
       return null;
     }
 
-    const searchRadius = Math.max(32, Math.hypot(endX - startX, endY - startY) + 16);
+    const searchRadius = Math.max(
+      PATHFINDING_MIN_SEARCH_RADIUS,
+      Math.hypot(endX - startX, endY - startY) + PATHFINDING_SEARCH_RADIUS_MARGIN,
+    );
     const toKey = (x: number, y: number) => `${x},${y}`;
 
     const visited = new Set<string>();
@@ -201,7 +213,7 @@ export class WorldMap {
         const tile = this.getTile(checkX, checkY);
         if (tile.type === TileType.WATER) {
           const distToWater = Math.hypot(pos.x - checkX, pos.y - checkY);
-          if (distToWater <= 1.2) {
+          if (distToWater <= WATER_ADJACENCY_MAX_DISTANCE) {
             return true;
           }
         }

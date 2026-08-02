@@ -1,3 +1,11 @@
+import {
+  INJURY_AIM_ACCURACY_LOSS_BOTH_ARMS_MULTIPLIER,
+  INJURY_AIM_ACCURACY_LOSS_ONE_ARM_MULTIPLIER,
+  INJURY_MOVE_SPEED_LOSS_BOTH_LEGS_MULTIPLIER,
+  INJURY_MOVE_SPEED_LOSS_ONE_LEG_MULTIPLIER,
+  INJURY_SIGHT_LOSS_BOTH_EYES_MULTIPLIER,
+  INJURY_SIGHT_LOSS_ONE_EYE_MULTIPLIER,
+} from '../const';
 import { StatModifier, StatModifierMode } from '../stats/stat-modifier';
 import { StatType } from '../stats/stat-type';
 import { BodyPart } from './body-part';
@@ -30,8 +38,8 @@ export function computeInjuryModifiers(parts: ReadonlyMap<BodyPartType, BodyPart
     StatType.SIGHT_RANGE,
     leftEye?.isDestroyed() ?? false,
     rightEye?.isDestroyed() ?? false,
-    0.5,
-    0,
+    INJURY_SIGHT_LOSS_ONE_EYE_MULTIPLIER,
+    INJURY_SIGHT_LOSS_BOTH_EYES_MULTIPLIER,
   );
   if (sightModifier) modifiers.push(sightModifier);
 
@@ -41,8 +49,8 @@ export function computeInjuryModifiers(parts: ReadonlyMap<BodyPartType, BodyPart
     StatType.MOVE_SPEED,
     leftLeg?.isDestroyed() ?? false,
     rightLeg?.isDestroyed() ?? false,
-    0.5,
-    0.05,
+    INJURY_MOVE_SPEED_LOSS_ONE_LEG_MULTIPLIER,
+    INJURY_MOVE_SPEED_LOSS_BOTH_LEGS_MULTIPLIER,
   );
   if (moveModifier) modifiers.push(moveModifier);
 
@@ -52,8 +60,8 @@ export function computeInjuryModifiers(parts: ReadonlyMap<BodyPartType, BodyPart
     StatType.AIM_ACCURACY,
     leftArm?.isDestroyed() ?? false,
     rightArm?.isDestroyed() ?? false,
-    0.6,
-    0.1,
+    INJURY_AIM_ACCURACY_LOSS_ONE_ARM_MULTIPLIER,
+    INJURY_AIM_ACCURACY_LOSS_BOTH_ARMS_MULTIPLIER,
   );
   if (aimModifier) modifiers.push(aimModifier);
 

@@ -1,4 +1,19 @@
 import Phaser from 'phaser';
+import {
+  HUMANOID_CANVAS_HEIGHT,
+  HUMANOID_CANVAS_WIDTH,
+  HUMANOID_EYE_RADIUS,
+  HUMANOID_HEAD_CENTER_Y,
+  HUMANOID_HEAD_RADIUS,
+  HUMANOID_OUTLINE_COLOR,
+  HUMANOID_OUTLINE_WIDTH,
+  HUMANOID_SIDE_TORSO_WIDTH,
+  HUMANOID_SKIN_COLOR,
+  HUMANOID_TORSO_HEIGHT,
+  HUMANOID_TORSO_RADIUS,
+  HUMANOID_TORSO_WIDTH,
+  HUMANOID_TORSO_Y,
+} from '../const';
 
 export enum HumanoidBodyType {
   MALE = 'male',
@@ -15,26 +30,23 @@ export interface HumanoidFacing {
   flipX: boolean;
 }
 
-const CANVAS_WIDTH = 44;
-const CANVAS_HEIGHT = 60;
+const CANVAS_WIDTH = HUMANOID_CANVAS_WIDTH;
+const CANVAS_HEIGHT = HUMANOID_CANVAS_HEIGHT;
 const CENTER_X = CANVAS_WIDTH / 2;
 
-const HEAD_RADIUS = 11;
-const HEAD_CY = 15;
+const HEAD_RADIUS = HUMANOID_HEAD_RADIUS;
+const HEAD_CY = HUMANOID_HEAD_CENTER_Y;
 
-const TORSO_X = 8;
-const TORSO_Y = 24;
-const TORSO_WIDTH = 28;
-const TORSO_HEIGHT = 28;
-const TORSO_RADIUS = 9;
-const FEET_Y = TORSO_Y + TORSO_HEIGHT;
+const TORSO_Y = HUMANOID_TORSO_Y;
+const TORSO_WIDTH = HUMANOID_TORSO_WIDTH;
+const SIDE_TORSO_WIDTH = HUMANOID_SIDE_TORSO_WIDTH;
+const TORSO_HEIGHT = HUMANOID_TORSO_HEIGHT;
+const TORSO_RADIUS = HUMANOID_TORSO_RADIUS;
 
-const SIDE_LEAN_ANGLE = Phaser.Math.DegToRad(12);
-
-const SKIN_COLOR = 0xe8dcc8;
-const OUTLINE_COLOR = 0x2f2f2f;
-const OUTLINE_WIDTH = 2;
-const EYE_RADIUS = 1.8;
+const SKIN_COLOR = HUMANOID_SKIN_COLOR;
+const OUTLINE_COLOR = HUMANOID_OUTLINE_COLOR;
+const OUTLINE_WIDTH = HUMANOID_OUTLINE_WIDTH;
+const EYE_RADIUS = HUMANOID_EYE_RADIUS;
 
 export function humanoidTextureKey(bodyType: HumanoidBodyType, pose: HumanoidPose): string {
   return `humanoid-${bodyType}-${pose}`;
@@ -74,12 +86,8 @@ function generateMaleTextures(scene: Phaser.Scene): void {
   });
 
   drawBody(scene, humanoidTextureKey(HumanoidBodyType.MALE, HumanoidPose.SIDE), (graphics) => {
-    graphics.translateCanvas(CENTER_X, FEET_Y);
-    graphics.rotateCanvas(SIDE_LEAN_ANGLE);
-    graphics.translateCanvas(-CENTER_X, -FEET_Y);
-
-    drawTorsoAndHead(graphics);
-    drawNose(graphics);
+    drawTorsoAndHead(graphics, SIDE_TORSO_WIDTH);
+    drawSideEye(graphics);
   });
 }
 
@@ -94,11 +102,16 @@ function drawBody(
   graphics.destroy();
 }
 
-function drawTorsoAndHead(graphics: Phaser.GameObjects.Graphics): void {
+function drawTorsoAndHead(
+  graphics: Phaser.GameObjects.Graphics,
+  torsoWidth: number = TORSO_WIDTH,
+): void {
+  const torsoX = CENTER_X - torsoWidth / 2;
+
   graphics.fillStyle(SKIN_COLOR, 1);
   graphics.lineStyle(OUTLINE_WIDTH, OUTLINE_COLOR, 1);
-  graphics.fillRoundedRect(TORSO_X, TORSO_Y, TORSO_WIDTH, TORSO_HEIGHT, TORSO_RADIUS);
-  graphics.strokeRoundedRect(TORSO_X, TORSO_Y, TORSO_WIDTH, TORSO_HEIGHT, TORSO_RADIUS);
+  graphics.fillRoundedRect(torsoX, TORSO_Y, torsoWidth, TORSO_HEIGHT, TORSO_RADIUS);
+  graphics.strokeRoundedRect(torsoX, TORSO_Y, torsoWidth, TORSO_HEIGHT, TORSO_RADIUS);
 
   graphics.fillCircle(CENTER_X, HEAD_CY, HEAD_RADIUS);
   graphics.strokeCircle(CENTER_X, HEAD_CY, HEAD_RADIUS);
@@ -110,25 +123,7 @@ function drawEyes(graphics: Phaser.GameObjects.Graphics): void {
   graphics.fillCircle(CENTER_X + 4, HEAD_CY - 2, EYE_RADIUS);
 }
 
-function drawNose(graphics: Phaser.GameObjects.Graphics): void {
-  const headRight = CENTER_X + HEAD_RADIUS;
-
-  graphics.fillStyle(SKIN_COLOR, 1);
-  graphics.lineStyle(OUTLINE_WIDTH, OUTLINE_COLOR, 1);
-  graphics.fillTriangle(
-    headRight - 3,
-    HEAD_CY - 4,
-    headRight - 3,
-    HEAD_CY + 4,
-    headRight + 4,
-    HEAD_CY,
-  );
-  graphics.strokeTriangle(
-    headRight - 3,
-    HEAD_CY - 4,
-    headRight - 3,
-    HEAD_CY + 4,
-    headRight + 4,
-    HEAD_CY,
-  );
+function drawSideEye(graphics: Phaser.GameObjects.Graphics): void {
+  graphics.fillStyle(OUTLINE_COLOR, 1);
+  graphics.fillCircle(CENTER_X + 5, HEAD_CY - 2, EYE_RADIUS);
 }

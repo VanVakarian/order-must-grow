@@ -1,10 +1,16 @@
+import {
+  AI_RETARGET_IMPROVEMENT_MARGIN,
+  AI_SEEK_PREY_KILL_DISTANCE,
+  AI_SEEK_PREY_KILL_RADIUS,
+  AI_SEEK_PREY_RETARGET_INTERVAL_MS,
+} from '../../const';
 import { NPCEntity } from '../../entities/npc-entity';
 import { BehaviorPriority, EntityType, NeedType } from '../../types';
 import { AIBehavior } from '../ai-behavior';
 
 export class SeekPreyBehavior extends AIBehavior {
   private retargetTimer: number = 0;
-  private retargetInterval: number = 400;
+  private retargetInterval: number = AI_SEEK_PREY_RETARGET_INTERVAL_MS;
   private currentPreyId: string | null = null;
 
   constructor() {
@@ -31,7 +37,7 @@ export class SeekPreyBehavior extends AIBehavior {
     if (currentTarget) {
       const pos = npc.getPosition();
       const distance = Math.hypot(currentTarget.x - pos.x, currentTarget.y - pos.y);
-      if (distance < 0.2) {
+      if (distance < AI_SEEK_PREY_KILL_DISTANCE) {
         this.tryKillPrey(npc);
         npc.setTargetPosition(null);
       }
@@ -66,7 +72,7 @@ export class SeekPreyBehavior extends AIBehavior {
     const currentDist = Math.hypot(currentTarget.x - pos.x, currentTarget.y - pos.y);
     const nextDist = Math.hypot(nextTarget.x - pos.x, nextTarget.y - pos.y);
 
-    if (nextDist + 0.1 < currentDist || prey.getId() !== this.currentPreyId) {
+    if (nextDist + AI_RETARGET_IMPROVEMENT_MARGIN < currentDist || prey.getId() !== this.currentPreyId) {
       this.currentPreyId = prey.getId();
       npc.setTargetPosition(nextTarget);
     }
@@ -87,7 +93,7 @@ export class SeekPreyBehavior extends AIBehavior {
       .getWorldQuery()
       .findNearestEntity(
         npc.getPosition(),
-        0.7,
+        AI_SEEK_PREY_KILL_RADIUS,
         (entity) => entity.getType() === EntityType.RABBIT,
       );
 

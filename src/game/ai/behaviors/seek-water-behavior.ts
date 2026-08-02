@@ -1,10 +1,15 @@
+import {
+  AI_RETARGET_IMPROVEMENT_MARGIN,
+  AI_SEEK_ARRIVAL_DISTANCE,
+  AI_SEEK_RETARGET_INTERVAL_MS,
+} from '../../const';
 import { NPCEntity } from '../../entities/npc-entity';
 import { BehaviorPriority, NeedType } from '../../types';
 import { AIBehavior } from '../ai-behavior';
 
 export class SeekWaterBehavior extends AIBehavior {
   private retargetTimer: number = 0;
-  private retargetInterval: number = 500;
+  private retargetInterval: number = AI_SEEK_RETARGET_INTERVAL_MS;
 
   constructor() {
     super(BehaviorPriority.HIGH, 'Seeking Water');
@@ -40,7 +45,7 @@ export class SeekWaterBehavior extends AIBehavior {
     if (currentTarget) {
       const distance = Math.hypot(currentTarget.x - pos.x, currentTarget.y - pos.y);
 
-      if (distance < 0.1) {
+      if (distance < AI_SEEK_ARRIVAL_DISTANCE) {
         npc.setTargetPosition(null);
       }
       return;
@@ -70,7 +75,7 @@ export class SeekWaterBehavior extends AIBehavior {
 
     const currentDist = Math.hypot(currentTarget.x - pos.x, currentTarget.y - pos.y);
     const nextDist = Math.hypot(adjacentPosition.x - pos.x, adjacentPosition.y - pos.y);
-    if (nextDist + 0.1 < currentDist) {
+    if (nextDist + AI_RETARGET_IMPROVEMENT_MARGIN < currentDist) {
       npc.setTargetPosition(adjacentPosition);
     }
   }

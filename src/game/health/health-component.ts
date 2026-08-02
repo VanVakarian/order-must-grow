@@ -1,3 +1,4 @@
+import { HEALTH_INITIAL_BLOOD_LEVEL } from '../const';
 import { StatsComponent } from '../stats/stats-component';
 import { BodyPart } from './body-part';
 import { BodyPartType } from './body-part-type';
@@ -13,7 +14,7 @@ export class HealthComponent {
   private readonly parts: Map<BodyPartType, BodyPart>;
   private readonly stats: StatsComponent;
 
-  private bloodLevel = 100;
+  private bloodLevel = HEALTH_INITIAL_BLOOD_LEVEL;
   private dead = false;
   private deathCause: DeathCause | null = null;
 

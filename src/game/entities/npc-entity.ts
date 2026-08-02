@@ -1,5 +1,14 @@
 import Phaser from 'phaser';
 import { AIBehavior } from '../ai/ai-behavior';
+import {
+  NPC_DEFAULT_BASE_MOVE_SPEED,
+  NPC_DEFAULT_PERCEPTION_RADIUS,
+  NPC_DEFAULT_URGENT_MOVE_SPEED,
+  NPC_DIRECTION_CHANGE_THRESHOLD,
+  NPC_NEED_MAX_VALUE,
+  NPC_WAYPOINT_ARRIVAL_DISTANCE,
+  TILE_SIZE_PX,
+} from '../const';
 import { EntityType, Need, NeedType, Position } from '../types';
 import { WorldMap } from '../world/world-map';
 import { WorldQuery } from '../world/world-query';
@@ -41,11 +50,11 @@ export abstract class NPCEntity extends Entity {
     this.targetPosition = null;
     this.path = [];
     this.currentWaypoint = null;
-    this.baseMoveSpeed = 1.0;
-    this.urgentMoveSpeed = 3.5;
+    this.baseMoveSpeed = NPC_DEFAULT_BASE_MOVE_SPEED;
+    this.urgentMoveSpeed = NPC_DEFAULT_URGENT_MOVE_SPEED;
     this.moveSpeed = this.baseMoveSpeed;
     this.moveSpeedOverride = null;
-    this.perceptionRadius = 8;
+    this.perceptionRadius = NPC_DEFAULT_PERCEPTION_RADIUS;
     this.initializeNeeds();
     this.initializeBehaviors();
   }
@@ -83,7 +92,7 @@ export abstract class NPCEntity extends Entity {
 
   protected updateNeeds(deltaTime: number): void {
     for (const need of this.needs.values()) {
-      need.value = Math.min(100, need.value + need.changeRate * (deltaTime / 1000));
+      need.value = Math.min(NPC_NEED_MAX_VALUE, need.value + need.changeRate * (deltaTime / 1000));
     }
   }
 
@@ -112,7 +121,7 @@ export abstract class NPCEntity extends Entity {
     const dy = this.currentWaypoint.y - this.position.y;
     const distance = Math.hypot(dx, dy);
 
-    if (distance < 0.05) {
+    if (distance < NPC_WAYPOINT_ARRIVAL_DISTANCE) {
       this.position.x = this.currentWaypoint.x;
       this.position.y = this.currentWaypoint.y;
       if (this.path.length > 0) {
@@ -129,7 +138,7 @@ export abstract class NPCEntity extends Entity {
     this.position.x += dx * ratio;
     this.position.y += dy * ratio;
 
-    if (Math.abs(dx) > 0.01) {
+    if (Math.abs(dx) > NPC_DIRECTION_CHANGE_THRESHOLD) {
       const newDirection = dx > 0 ? 1 : -1;
       if (newDirection !== this.lastDirection) {
         this.lastDirection = newDirection;
@@ -141,7 +150,7 @@ export abstract class NPCEntity extends Entity {
   }
 
   protected updateSpritePosition(): void {
-    const tileSize = 48;
+    const tileSize = TILE_SIZE_PX;
     this.sprite.setPosition(
       this.position.x * tileSize + tileSize / 2,
       this.position.y * tileSize + tileSize / 2,
@@ -155,7 +164,7 @@ export abstract class NPCEntity extends Entity {
   setNeedValue(type: NeedType, value: number): void {
     const need = this.needs.get(type);
     if (need) {
-      need.value = Math.max(0, Math.min(100, value));
+      need.value = Math.max(0, Math.min(NPC_NEED_MAX_VALUE, value));
     }
   }
 

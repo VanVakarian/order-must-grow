@@ -1,10 +1,15 @@
+import {
+  AI_RETARGET_IMPROVEMENT_MARGIN,
+  AI_SEEK_ARRIVAL_DISTANCE,
+  AI_SEEK_RETARGET_INTERVAL_MS,
+} from '../../const';
 import { NPCEntity } from '../../entities/npc-entity';
 import { BehaviorPriority, NeedType } from '../../types';
 import { AIBehavior } from '../ai-behavior';
 
 export class SeekFoodBehavior extends AIBehavior {
   private retargetTimer: number = 0;
-  private retargetInterval: number = 500;
+  private retargetInterval: number = AI_SEEK_RETARGET_INTERVAL_MS;
 
   constructor() {
     super(BehaviorPriority.HIGH, 'Seeking Food');
@@ -33,7 +38,7 @@ export class SeekFoodBehavior extends AIBehavior {
       const pos = npc.getPosition();
       const distance = Math.hypot(currentTarget.x - pos.x, currentTarget.y - pos.y);
 
-      if (distance < 0.1) {
+      if (distance < AI_SEEK_ARRIVAL_DISTANCE) {
         this.eatFood(npc, currentTarget);
         npc.setTargetPosition(null);
       }
@@ -71,7 +76,7 @@ export class SeekFoodBehavior extends AIBehavior {
     const currentDist = Math.hypot(currentTarget.x - pos.x, currentTarget.y - pos.y);
     const nextDist = Math.hypot(nearestFood.x - pos.x, nearestFood.y - pos.y);
 
-    if (nextDist + 0.1 < currentDist) {
+    if (nextDist + AI_RETARGET_IMPROVEMENT_MARGIN < currentDist) {
       npc.setTargetPosition(nearestFood);
     }
   }

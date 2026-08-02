@@ -1,4 +1,12 @@
 import Phaser from 'phaser';
+import {
+  HIGHLIGHT_FRAME_COLOR,
+  HIGHLIGHT_FRAME_CORNER_LENGTH,
+  HIGHLIGHT_FRAME_CORNER_RADIUS,
+  HIGHLIGHT_FRAME_LINE_WIDTH,
+  HIGHLIGHT_FRAME_PADDING,
+  RENDER_DEPTH_HIGHLIGHT_FRAME,
+} from '../const';
 import { EntityType, Position } from '../types';
 
 export abstract class Entity {
@@ -30,7 +38,7 @@ export abstract class Entity {
 
   private createHighlightFrame(): Phaser.GameObjects.Graphics {
     const graphics = this.scene.add.graphics();
-    graphics.setDepth(101);
+    graphics.setDepth(RENDER_DEPTH_HIGHLIGHT_FRAME);
     graphics.setVisible(false);
     return graphics;
   }
@@ -44,11 +52,11 @@ export abstract class Entity {
     const spriteHeight = this.sprite.height;
 
     this.highlightFrame.clear();
-    this.highlightFrame.lineStyle(4, 0xffeb3b, 1);
+    this.highlightFrame.lineStyle(HIGHLIGHT_FRAME_LINE_WIDTH, HIGHLIGHT_FRAME_COLOR, 1);
 
-    const padding = 4;
-    const cornerLength = 12;
-    const radius = 6;
+    const padding = HIGHLIGHT_FRAME_PADDING;
+    const cornerLength = HIGHLIGHT_FRAME_CORNER_LENGTH;
+    const radius = HIGHLIGHT_FRAME_CORNER_RADIUS;
 
     const left = spriteX - spriteWidth / 2 - padding;
     const right = spriteX + spriteWidth / 2 + padding;

@@ -1,10 +1,16 @@
+import {
+  AI_MOVEMENT_ARRIVAL_DISTANCE,
+  AI_WANDER_INTERVAL_MS,
+  AI_WANDER_MAX_ATTEMPTS,
+  AI_WANDER_MAX_DISTANCE,
+} from '../../const';
 import { NPCEntity } from '../../entities/npc-entity';
 import { BehaviorPriority } from '../../types';
 import { AIBehavior } from '../ai-behavior';
 
 export class WanderBehavior extends AIBehavior {
   private wanderTimer: number = 0;
-  private wanderInterval: number = 2000;
+  private wanderInterval: number = AI_WANDER_INTERVAL_MS;
 
   constructor() {
     super(BehaviorPriority.LOW, 'Wandering');
@@ -21,7 +27,7 @@ export class WanderBehavior extends AIBehavior {
       const pos = npc.getPosition();
       const distance = Math.hypot(currentTarget.x - pos.x, currentTarget.y - pos.y);
 
-      if (distance < 0.1) {
+      if (distance < AI_MOVEMENT_ARRIVAL_DISTANCE) {
         npc.setTargetPosition(null);
         this.wanderTimer = 0;
       }
@@ -40,8 +46,8 @@ export class WanderBehavior extends AIBehavior {
     const worldMap = npc.getWorldMap();
     const currentPos = npc.getPosition();
 
-    const maxDistance = 3;
-    const attempts = 10;
+    const maxDistance = AI_WANDER_MAX_DISTANCE;
+    const attempts = AI_WANDER_MAX_ATTEMPTS;
 
     for (let i = 0; i < attempts; i++) {
       const angle = Math.random() * Math.PI * 2;

@@ -1,5 +1,15 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, HostListener, computed, effect, inject, signal, untracked } from '@angular/core';
+import {
+  BODY_PART_DEFAULT_COLOR,
+  DEBUG_UI_POLL_INTERVAL_MS,
+  HEALTH_COLOR_CRITICAL,
+  HEALTH_COLOR_DESTROYED,
+  HEALTH_COLOR_HEALTHY,
+  HEALTH_COLOR_INJURED,
+  HEALTH_RATIO_HEALTHY_THRESHOLD,
+  HEALTH_RATIO_INJURED_THRESHOLD,
+} from '../../../game/const';
 import { BodyPartType } from '../../../game/health/body-part-type';
 import { CharacterHealthSnapshot, GameService } from '../../services/game.service';
 
@@ -73,7 +83,7 @@ export class CharacterDiagram {
           untracked(() => {
             this.snapshot$$.set(this.gameService.getPlayerHealthSnapshot());
           });
-        }, 100);
+        }, DEBUG_UI_POLL_INTERVAL_MS);
       } else if (intervalId !== undefined) {
         clearInterval(intervalId);
         intervalId = undefined;
@@ -114,14 +124,14 @@ export class CharacterDiagram {
 
   protected getShapeColor(type: BodyPartType): string {
     const part = this.partsByType().get(type);
-    if (!part) return '#6b7280';
+    if (!part) return BODY_PART_DEFAULT_COLOR;
     return this.getPartColor(part.healthRatio, part.destroyed);
   }
 
   protected getPartColor(healthRatio: number, destroyed: boolean): string {
-    if (destroyed) return '#4b5563';
-    if (healthRatio > 0.66) return '#4ade80';
-    if (healthRatio > 0.33) return '#fbbf24';
-    return '#ef4444';
+    if (destroyed) return HEALTH_COLOR_DESTROYED;
+    if (healthRatio > HEALTH_RATIO_HEALTHY_THRESHOLD) return HEALTH_COLOR_HEALTHY;
+    if (healthRatio > HEALTH_RATIO_INJURED_THRESHOLD) return HEALTH_COLOR_INJURED;
+    return HEALTH_COLOR_CRITICAL;
   }
 }

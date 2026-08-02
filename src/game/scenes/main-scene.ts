@@ -1,4 +1,40 @@
 import Phaser from 'phaser';
+import {
+  CAMERA_DEFAULT_ZOOM,
+  CAMERA_FOCUS_TWEEN_DURATION_MS,
+  CAMERA_FOLLOW_LERP,
+  CAMERA_MAX_ZOOM,
+  CAMERA_MIN_ZOOM,
+  CAMERA_ZOOM_WHEEL_SPEED,
+  ENTITY_HOVER_HIT_PADDING,
+  FOG_COLOR,
+  FOG_FADE_IN_DURATION_MS,
+  FOG_FADE_OUT_DURATION_MS,
+  FOG_MAX_ALPHA,
+  FOG_UNSEEN_COLOR,
+  MAIN_SCENE_CHUNK_LOAD_MARGIN_CHUNKS,
+  MAIN_SCENE_CHUNK_SIZE_TILES,
+  PLAYER_FOV_ANGLE,
+  PLAYER_MAX_SIGHT_CONE_RANGE_TILES,
+  PLAYER_NEAR_SIGHT_RADIUS_TILES,
+  RENDER_DEPTH_FOG,
+  RENDER_DEPTH_SELECTION_MARKER,
+  RENDER_DEPTH_TILE,
+  SELECTION_MARKER_COLOR,
+  SELECTION_MARKER_CORNER_LENGTH,
+  SELECTION_MARKER_CORNER_RADIUS,
+  SELECTION_MARKER_PADDING,
+  SELECTION_MARKER_THICKNESS,
+  SPAWN_SEARCH_MAX_RADIUS_TILES,
+  TILE_BORDER_ALPHA,
+  TILE_BORDER_COLOR,
+  TILE_BORDER_WIDTH,
+  TILE_COLOR_DIRT,
+  TILE_COLOR_GRASS,
+  TILE_COLOR_STONE,
+  TILE_COLOR_WATER,
+  TILE_SIZE_PX,
+} from '../const';
 import { EntityManager } from '../entities/entity-manager';
 import { Player } from '../entities/player';
 import { generateHumanoidTextures, HumanoidBodyType } from '../rendering/humanoid-sprite-generator';
@@ -18,9 +54,9 @@ enum TextureKey {
 }
 
 export class MainScene extends Phaser.Scene {
-  private tileSize = 48;
-  private chunkSizeInTiles = 16;
-  private chunkLoadMarginInChunks = 1;
+  private tileSize = TILE_SIZE_PX;
+  private chunkSizeInTiles = MAIN_SCENE_CHUNK_SIZE_TILES;
+  private chunkLoadMarginInChunks = MAIN_SCENE_CHUNK_LOAD_MARGIN_CHUNKS;
 
   private worldMap!: WorldMap;
   private entityManager!: EntityManager;
@@ -30,24 +66,24 @@ export class MainScene extends Phaser.Scene {
   private loadedChunks: Set<string> = new Set();
   private player!: Player;
 
-  private minZoom = 0.5;
-  private maxZoom = 4;
-  private defaultZoom = 1.03;
-  private zoomSpeed = 0.0015;
-  private cameraLerp = 0.08;
+  private minZoom = CAMERA_MIN_ZOOM;
+  private maxZoom = CAMERA_MAX_ZOOM;
+  private defaultZoom = CAMERA_DEFAULT_ZOOM;
+  private zoomSpeed = CAMERA_ZOOM_WHEEL_SPEED;
+  private cameraLerp = CAMERA_FOLLOW_LERP;
 
   private selectionMarker!: Phaser.GameObjects.Image;
 
   private highlightedNPCId: string | null = null;
 
-  private readonly fovAngle = Phaser.Math.DegToRad(110);
-  private readonly maxConeRangeInTiles = 20;
-  private readonly nearSightRadiusInTiles = 3;
-  private readonly fogColor = 0x6f7378;
-  private readonly fogMaxAlpha = 0.65;
-  private readonly unseenColor = 0x000000;
-  private readonly fogFadeOutDurationMs = 2000;
-  private readonly fogFadeInDurationMs = 100;
+  private readonly fovAngle = PLAYER_FOV_ANGLE;
+  private readonly maxConeRangeInTiles = PLAYER_MAX_SIGHT_CONE_RANGE_TILES;
+  private readonly nearSightRadiusInTiles = PLAYER_NEAR_SIGHT_RADIUS_TILES;
+  private readonly fogColor = FOG_COLOR;
+  private readonly fogMaxAlpha = FOG_MAX_ALPHA;
+  private readonly unseenColor = FOG_UNSEEN_COLOR;
+  private readonly fogFadeOutDurationMs = FOG_FADE_OUT_DURATION_MS;
+  private readonly fogFadeInDurationMs = FOG_FADE_IN_DURATION_MS;
 
   constructor() {
     super({ key: 'MainScene' });
@@ -84,30 +120,30 @@ export class MainScene extends Phaser.Scene {
   private createTileGraphics() {
     const graphics = this.add.graphics();
 
-    graphics.fillStyle(0x808080, 1);
+    graphics.fillStyle(TILE_COLOR_STONE, 1);
     graphics.fillRect(0, 0, this.tileSize, this.tileSize);
-    graphics.lineStyle(1, 0x000000, 0.1);
+    graphics.lineStyle(TILE_BORDER_WIDTH, TILE_BORDER_COLOR, TILE_BORDER_ALPHA);
     graphics.strokeRect(0, 0, this.tileSize, this.tileSize);
     graphics.generateTexture(TextureKey.TILE_STONE, this.tileSize, this.tileSize);
     graphics.clear();
 
-    graphics.fillStyle(0x8b7355, 1);
+    graphics.fillStyle(TILE_COLOR_DIRT, 1);
     graphics.fillRect(0, 0, this.tileSize, this.tileSize);
-    graphics.lineStyle(1, 0x000000, 0.1);
+    graphics.lineStyle(TILE_BORDER_WIDTH, TILE_BORDER_COLOR, TILE_BORDER_ALPHA);
     graphics.strokeRect(0, 0, this.tileSize, this.tileSize);
     graphics.generateTexture(TextureKey.TILE_DIRT, this.tileSize, this.tileSize);
     graphics.clear();
 
-    graphics.fillStyle(0x4a7c3e, 1);
+    graphics.fillStyle(TILE_COLOR_GRASS, 1);
     graphics.fillRect(0, 0, this.tileSize, this.tileSize);
-    graphics.lineStyle(1, 0x000000, 0.1);
+    graphics.lineStyle(TILE_BORDER_WIDTH, TILE_BORDER_COLOR, TILE_BORDER_ALPHA);
     graphics.strokeRect(0, 0, this.tileSize, this.tileSize);
     graphics.generateTexture(TextureKey.TILE_GRASS, this.tileSize, this.tileSize);
     graphics.clear();
 
-    graphics.fillStyle(0x4a90d9, 1);
+    graphics.fillStyle(TILE_COLOR_WATER, 1);
     graphics.fillRect(0, 0, this.tileSize, this.tileSize);
-    graphics.lineStyle(1, 0x000000, 0.1);
+    graphics.lineStyle(TILE_BORDER_WIDTH, TILE_BORDER_COLOR, TILE_BORDER_ALPHA);
     graphics.strokeRect(0, 0, this.tileSize, this.tileSize);
     graphics.generateTexture(TextureKey.TILE_WATER, this.tileSize, this.tileSize);
 
@@ -125,11 +161,11 @@ export class MainScene extends Phaser.Scene {
   private createSelectionMarkerGraphics() {
     const graphics = this.make.graphics({ x: 0, y: 0 });
     const size = this.tileSize;
-    const thickness = 4;
-    const padding = 2; // Offset from the tile edge
-    const cornerLength = 12;
-    const radius = 6;
-    const color = 0xff8c00; // Dark Orange
+    const thickness = SELECTION_MARKER_THICKNESS;
+    const padding = SELECTION_MARKER_PADDING;
+    const cornerLength = SELECTION_MARKER_CORNER_LENGTH;
+    const radius = SELECTION_MARKER_CORNER_RADIUS;
+    const color = SELECTION_MARKER_COLOR;
 
     graphics.lineStyle(thickness, color, 1);
 
@@ -240,11 +276,11 @@ export class MainScene extends Phaser.Scene {
     const textureKey = this.getTileTexture(tileData);
     const tile = this.add.image(worldX, worldY, textureKey);
     tile.setOrigin(0, 0);
-    tile.setDepth(0);
+    tile.setDepth(RENDER_DEPTH_TILE);
 
     const fog = this.add.image(worldX, worldY, TextureKey.TILE_FOG);
     fog.setOrigin(0, 0);
-    fog.setDepth(1);
+    fog.setDepth(RENDER_DEPTH_FOG);
     fog.setTint(tileData.everSeen ? this.fogColor : this.unseenColor);
     fog.setAlpha(tileData.everSeen ? this.fogMaxAlpha : 1);
 
@@ -288,7 +324,7 @@ export class MainScene extends Phaser.Scene {
       return { x: 0, y: 0 };
     }
 
-    for (let radius = 1; radius <= 100; radius++) {
+    for (let radius = 1; radius <= SPAWN_SEARCH_MAX_RADIUS_TILES; radius++) {
       for (let dx = -radius; dx <= radius; dx++) {
         for (let dy = -radius; dy <= radius; dy++) {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
@@ -303,7 +339,7 @@ export class MainScene extends Phaser.Scene {
   private createSelectionMarker() {
     this.selectionMarker = this.add.image(0, 0, TextureKey.SELECTION_MARKER);
     this.selectionMarker.setOrigin(0, 0);
-    this.selectionMarker.setDepth(100);
+    this.selectionMarker.setDepth(RENDER_DEPTH_SELECTION_MARKER);
     this.selectionMarker.setVisible(false);
   }
 
@@ -400,20 +436,23 @@ export class MainScene extends Phaser.Scene {
     const pointer = this.input.activePointer;
     const camera = this.cameras.main;
     const worldPoint = this.screenToWorld(camera, pointer.x, pointer.y, camera.zoom);
+    const ctrlHeld = !!(pointer.event as MouseEvent | undefined)?.ctrlKey;
 
     const entities = this.entityManager.getAllEntities();
     let hoveredNPC = null;
 
-    for (const entity of entities) {
-      const sprite = entity.getSprite();
-      const dx = worldPoint.x - sprite.x;
-      const dy = worldPoint.y - sprite.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
+    if (ctrlHeld) {
+      for (const entity of entities) {
+        const sprite = entity.getSprite();
+        const dx = worldPoint.x - sprite.x;
+        const dy = worldPoint.y - sprite.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
 
-      const spriteWidth = 'width' in sprite ? sprite.width : 48;
-      if (distance < spriteWidth / 2 + 5) {
-        hoveredNPC = entity;
-        break;
+        const spriteWidth = 'width' in sprite ? sprite.width : TILE_SIZE_PX;
+        if (distance < spriteWidth / 2 + ENTITY_HOVER_HIT_PADDING) {
+          hoveredNPC = entity;
+          break;
+        }
       }
     }
 
@@ -431,7 +470,10 @@ export class MainScene extends Phaser.Scene {
       entity.setHighlight(shouldHighlight);
     }
 
-    if (hoveredNPC) {
+    if (!ctrlHeld) {
+      this.selectionMarker.setVisible(false);
+      this.game.canvas.style.cursor = 'default';
+    } else if (hoveredNPC) {
       this.selectionMarker.setVisible(false);
       this.game.canvas.style.cursor = 'pointer';
     } else {
@@ -482,7 +524,7 @@ export class MainScene extends Phaser.Scene {
       targets: camera,
       scrollX: targetWorldX - camera.width / 2,
       scrollY: targetWorldY - camera.height / 2,
-      duration: 600,
+      duration: CAMERA_FOCUS_TWEEN_DURATION_MS,
       ease: 'Power2',
     });
   }

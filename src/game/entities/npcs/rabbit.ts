@@ -5,7 +5,21 @@ import { SearchWaterBehavior } from '../../ai/behaviors/search-water-behavior';
 import { SeekFoodBehavior } from '../../ai/behaviors/seek-food-behavior';
 import { SeekWaterBehavior } from '../../ai/behaviors/seek-water-behavior';
 import { WanderBehavior } from '../../ai/behaviors/wander-behavior';
-import { npcSpriteConfig } from '../../config/npc-sprites';
+import {
+  RABBIT_BASE_MOVE_SPEED_MIN,
+  RABBIT_BASE_MOVE_SPEED_RANDOM_RANGE,
+  RABBIT_HUNGER_RATE_MIN,
+  RABBIT_HUNGER_RATE_RANDOM_RANGE,
+  RABBIT_NEED_THRESHOLD,
+  RABBIT_PERCEPTION_RADIUS,
+  RABBIT_SPRITE_HEIGHT_SCALE,
+  RABBIT_THIRST_RATE_MIN,
+  RABBIT_THIRST_RATE_RANDOM_RANGE,
+  RABBIT_URGENT_MOVE_SPEED_MIN,
+  RABBIT_URGENT_MOVE_SPEED_RANDOM_RANGE,
+  RENDER_DEPTH_ENTITY_SPRITE,
+  TILE_SIZE_PX,
+} from '../../const';
 import { EntityType, NeedType } from '../../types';
 import { WorldMap } from '../../world/world-map';
 import { EntityManager } from '../entity-manager';
@@ -20,19 +34,19 @@ export class Rabbit extends NPCEntity {
     entityManager: EntityManager,
   ) {
     super(scene, EntityType.RABBIT, x, y, worldMap, entityManager);
-    this.perceptionRadius = 8;
+    this.perceptionRadius = RABBIT_PERCEPTION_RADIUS;
     this.randomizeParameters();
   }
 
   private randomizeParameters(): void {
-    this.baseMoveSpeed = 0.9 + Math.random() * 0.2;
-    this.urgentMoveSpeed = 3.0 + Math.random() * 0.6;
+    this.baseMoveSpeed = RABBIT_BASE_MOVE_SPEED_MIN + Math.random() * RABBIT_BASE_MOVE_SPEED_RANDOM_RANGE;
+    this.urgentMoveSpeed = RABBIT_URGENT_MOVE_SPEED_MIN + Math.random() * RABBIT_URGENT_MOVE_SPEED_RANDOM_RANGE;
     this.moveSpeed = this.baseMoveSpeed;
   }
 
   protected createSprite(): Phaser.GameObjects.Image {
-    const tileSize = 48;
-    const spriteHeight = tileSize * npcSpriteConfig.rabbit.heightScale;
+    const tileSize = TILE_SIZE_PX;
+    const spriteHeight = tileSize * RABBIT_SPRITE_HEIGHT_SCALE;
 
     const sprite = this.scene.add.image(
       this.position.x * tileSize + tileSize / 2,
@@ -45,25 +59,25 @@ export class Rabbit extends NPCEntity {
     const spriteWidth = spriteHeight * ratio;
 
     sprite.setDisplaySize(spriteWidth, spriteHeight);
-    sprite.setDepth(10);
+    sprite.setDepth(RENDER_DEPTH_ENTITY_SPRITE);
 
     return sprite;
   }
 
   protected initializeNeeds(): void {
-    const hungerRate = 0.7 + Math.random() * 0.6;
-    const thirstRate = 0.7 + Math.random() * 0.6;
+    const hungerRate = RABBIT_HUNGER_RATE_MIN + Math.random() * RABBIT_HUNGER_RATE_RANDOM_RANGE;
+    const thirstRate = RABBIT_THIRST_RATE_MIN + Math.random() * RABBIT_THIRST_RATE_RANDOM_RANGE;
 
     this.needs.set(NeedType.HUNGER, {
       type: NeedType.HUNGER,
       value: 0,
-      threshold: 60,
+      threshold: RABBIT_NEED_THRESHOLD,
       changeRate: hungerRate,
     });
     this.needs.set(NeedType.THIRST, {
       type: NeedType.THIRST,
       value: 0,
-      threshold: 60,
+      threshold: RABBIT_NEED_THRESHOLD,
       changeRate: thirstRate,
     });
   }

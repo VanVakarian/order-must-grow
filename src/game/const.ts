@@ -1,0 +1,170 @@
+import Phaser from 'phaser';
+
+export const TILE_SIZE_PX = 48;
+
+export const GAME_BACKGROUND_COLOR = '#2d2d2d';
+
+export const PLAYER_MOVE_SPEED = 4;
+export const PLAYER_MOVE_SPEED_DIRECTION_AMPLITUDE = 0.35;
+export const PLAYER_SIGHT_RANGE = 2000;
+export const PLAYER_AIM_ACCURACY = 1;
+
+export const RENDER_DEPTH_TILE = 0;
+export const RENDER_DEPTH_FOG = 1;
+export const RENDER_DEPTH_ENTITY_SPRITE = 10;
+export const RENDER_DEPTH_SELECTION_MARKER = 100;
+export const RENDER_DEPTH_HIGHLIGHT_FRAME = 101;
+
+export const HUMANOID_CANVAS_WIDTH = 44;
+export const HUMANOID_CANVAS_HEIGHT = 60;
+export const HUMANOID_HEAD_RADIUS = 11;
+export const HUMANOID_HEAD_CENTER_Y = 15;
+export const HUMANOID_TORSO_Y = 24;
+export const HUMANOID_TORSO_WIDTH = 28;
+export const HUMANOID_SIDE_TORSO_WIDTH = 20;
+export const HUMANOID_TORSO_HEIGHT = 28;
+export const HUMANOID_TORSO_RADIUS = 9;
+export const HUMANOID_MAX_LEAN_ANGLE = Phaser.Math.DegToRad(12);
+export const HUMANOID_SKIN_COLOR = 0xe8dcc8;
+export const HUMANOID_OUTLINE_COLOR = 0x2f2f2f;
+export const HUMANOID_OUTLINE_WIDTH = 2;
+export const HUMANOID_EYE_RADIUS = 1.8;
+
+export const RABBIT_SPRITE_HEIGHT_SCALE = 0.65;
+export const WOLF_SPRITE_HEIGHT_SCALE = 1;
+
+export const HIGHLIGHT_FRAME_COLOR = 0xffeb3b;
+export const HIGHLIGHT_FRAME_LINE_WIDTH = 4;
+export const HIGHLIGHT_FRAME_PADDING = 4;
+export const HIGHLIGHT_FRAME_CORNER_LENGTH = 12;
+export const HIGHLIGHT_FRAME_CORNER_RADIUS = 6;
+
+export const NPC_DEFAULT_BASE_MOVE_SPEED = 1.0;
+export const NPC_DEFAULT_URGENT_MOVE_SPEED = 3.5;
+export const NPC_DEFAULT_PERCEPTION_RADIUS = 8;
+export const NPC_WAYPOINT_ARRIVAL_DISTANCE = 0.05;
+export const NPC_DIRECTION_CHANGE_THRESHOLD = 0.01;
+export const NPC_NEED_MAX_VALUE = 100;
+
+export const RABBIT_PERCEPTION_RADIUS = 8;
+export const RABBIT_BASE_MOVE_SPEED_MIN = 0.9;
+export const RABBIT_BASE_MOVE_SPEED_RANDOM_RANGE = 0.2;
+export const RABBIT_URGENT_MOVE_SPEED_MIN = 3.0;
+export const RABBIT_URGENT_MOVE_SPEED_RANDOM_RANGE = 0.6;
+export const RABBIT_HUNGER_RATE_MIN = 0.7;
+export const RABBIT_HUNGER_RATE_RANDOM_RANGE = 0.6;
+export const RABBIT_THIRST_RATE_MIN = 0.7;
+export const RABBIT_THIRST_RATE_RANDOM_RANGE = 0.6;
+export const RABBIT_NEED_THRESHOLD = 60;
+
+export const WOLF_PERCEPTION_RADIUS = 10;
+export const WOLF_BASE_MOVE_SPEED_MIN = 0.9;
+export const WOLF_BASE_MOVE_SPEED_RANDOM_RANGE = 0.2;
+export const WOLF_URGENT_MOVE_SPEED_MIN = 3.0;
+export const WOLF_URGENT_MOVE_SPEED_RANDOM_RANGE = 0.6;
+export const WOLF_HUNGER_RATE_MIN = 0.8;
+export const WOLF_HUNGER_RATE_RANDOM_RANGE = 0.6;
+export const WOLF_THIRST_RATE_MIN = 0.7;
+export const WOLF_THIRST_RATE_RANDOM_RANGE = 0.5;
+export const WOLF_NEED_THRESHOLD = 60;
+
+export const AI_SEARCH_INTERVAL_MS = 5000;
+export const AI_SEARCH_MAX_TRAVEL_BEFORE_TURN = 20;
+export const AI_MOVEMENT_ARRIVAL_DISTANCE = 0.1;
+export const AI_SEARCH_MIN_DISTANCE = 4;
+export const AI_SEARCH_DISTANCE_PERCEPTION_MULTIPLIER = 1.5;
+export const AI_SEARCH_MAX_ATTEMPTS = 10;
+export const AI_SEARCH_DIRECTION_TURN_ANGLE_RAD = Math.PI / 4;
+
+export const AI_SEEK_RETARGET_INTERVAL_MS = 500;
+export const AI_SEEK_ARRIVAL_DISTANCE = 0.1;
+export const AI_RETARGET_IMPROVEMENT_MARGIN = 0.1;
+
+export const AI_SEEK_PREY_RETARGET_INTERVAL_MS = 400;
+export const AI_SEEK_PREY_KILL_DISTANCE = 0.2;
+export const AI_SEEK_PREY_KILL_RADIUS = 0.7;
+
+export const AI_FLEE_RETARGET_INTERVAL_MS = 400;
+export const AI_FLEE_DISTANCE_PERCEPTION_MULTIPLIER = 0.6;
+export const AI_FLEE_MIN_DISTANCE = 4;
+export const AI_FLEE_ANGLE_STEP_RAD = Math.PI / 4;
+
+export const AI_WANDER_INTERVAL_MS = 2000;
+export const AI_WANDER_MAX_DISTANCE = 3;
+export const AI_WANDER_MAX_ATTEMPTS = 10;
+
+export const HEALTH_INITIAL_BLOOD_LEVEL = 100;
+
+export const INJURY_SIGHT_LOSS_ONE_EYE_MULTIPLIER = 0.5;
+export const INJURY_SIGHT_LOSS_BOTH_EYES_MULTIPLIER = 0;
+export const INJURY_MOVE_SPEED_LOSS_ONE_LEG_MULTIPLIER = 0.5;
+export const INJURY_MOVE_SPEED_LOSS_BOTH_LEGS_MULTIPLIER = 0.05;
+export const INJURY_AIM_ACCURACY_LOSS_ONE_ARM_MULTIPLIER = 0.6;
+export const INJURY_AIM_ACCURACY_LOSS_BOTH_ARMS_MULTIPLIER = 0.1;
+
+export const MAIN_SCENE_CHUNK_SIZE_TILES = 16;
+export const MAIN_SCENE_CHUNK_LOAD_MARGIN_CHUNKS = 1;
+export const SPAWN_SEARCH_MAX_RADIUS_TILES = 100;
+
+export const CAMERA_MIN_ZOOM = 0.5;
+export const CAMERA_MAX_ZOOM = 4;
+export const CAMERA_DEFAULT_ZOOM = 1.03;
+export const CAMERA_ZOOM_WHEEL_SPEED = 0.0015;
+export const CAMERA_FOLLOW_LERP = 0.08;
+export const CAMERA_FOCUS_TWEEN_DURATION_MS = 600;
+
+export const PLAYER_FOV_ANGLE = Phaser.Math.DegToRad(110);
+export const PLAYER_MAX_SIGHT_CONE_RANGE_TILES = 20;
+export const PLAYER_NEAR_SIGHT_RADIUS_TILES = 3;
+
+export const FOG_COLOR = 0x6f7378;
+export const FOG_MAX_ALPHA = 0.65;
+export const FOG_UNSEEN_COLOR = 0x000000;
+export const FOG_FADE_OUT_DURATION_MS = 2000;
+export const FOG_FADE_IN_DURATION_MS = 100;
+
+export const TILE_COLOR_STONE = 0x808080;
+export const TILE_COLOR_DIRT = 0x8b7355;
+export const TILE_COLOR_GRASS = 0x4a7c3e;
+export const TILE_COLOR_WATER = 0x4a90d9;
+export const TILE_BORDER_COLOR = 0x000000;
+export const TILE_BORDER_ALPHA = 0.1;
+export const TILE_BORDER_WIDTH = 1;
+
+export const SELECTION_MARKER_THICKNESS = 4;
+export const SELECTION_MARKER_PADDING = 2; // Offset from the tile edge
+export const SELECTION_MARKER_CORNER_LENGTH = 12;
+export const SELECTION_MARKER_CORNER_RADIUS = 6;
+export const SELECTION_MARKER_COLOR = 0xff8c00; // Dark Orange
+
+export const ENTITY_HOVER_HIT_PADDING = 5;
+
+export const WORLD_WATER_NOISE_THRESHOLD = 0.5;
+export const WORLD_STONE_NOISE_THRESHOLD = 0.3;
+export const WORLD_VEGETATION_SPAWN_CHANCE = 0.3;
+export const WORLD_VEGETATION_INITIAL_GROWTH_STAGE = 1;
+export const PATHFINDING_MIN_SEARCH_RADIUS = 32;
+export const PATHFINDING_SEARCH_RADIUS_MARGIN = 16;
+export const WATER_ADJACENCY_MAX_DISTANCE = 1.2;
+
+export const HEALTH_RATIO_HEALTHY_THRESHOLD = 0.66;
+export const HEALTH_RATIO_INJURED_THRESHOLD = 0.33;
+export const HEALTH_COLOR_HEALTHY = '#4ade80';
+export const HEALTH_COLOR_INJURED = '#fbbf24';
+export const HEALTH_COLOR_CRITICAL = '#ef4444';
+export const HEALTH_COLOR_DESTROYED = '#4b5563';
+export const BODY_PART_DEFAULT_COLOR = '#6b7280';
+
+export const NEED_LOW_THRESHOLD = 30;
+export const NEED_MEDIUM_THRESHOLD = 60;
+export const NEED_COLOR_LOW = '#4ade80';
+export const NEED_COLOR_MEDIUM = '#fbbf24';
+export const NEED_COLOR_HIGH = '#ef4444';
+
+export const BLOOD_LEVEL_HIGH_THRESHOLD = 60;
+export const BLOOD_LEVEL_MEDIUM_THRESHOLD = 30;
+export const BLOOD_COLOR_HIGH = '#ef4444';
+export const BLOOD_COLOR_MEDIUM = '#fbbf24';
+export const BLOOD_COLOR_LOW = '#f87171';
+
+export const DEBUG_UI_POLL_INTERVAL_MS = 100;

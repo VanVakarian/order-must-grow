@@ -1,4 +1,13 @@
 import Phaser from 'phaser';
+import {
+  HUMANOID_MAX_LEAN_ANGLE,
+  PLAYER_AIM_ACCURACY,
+  PLAYER_MOVE_SPEED,
+  PLAYER_MOVE_SPEED_DIRECTION_AMPLITUDE,
+  PLAYER_SIGHT_RANGE,
+  RENDER_DEPTH_ENTITY_SPRITE,
+  TILE_SIZE_PX,
+} from '../const';
 import { HUMANOID_BODY_PLAN } from '../health/body-plans/humanoid';
 import {
   HumanoidBodyType,
@@ -20,6 +29,7 @@ export class Player extends Character {
     right: Phaser.Input.Keyboard.Key;
   };
   private facingAngle = 0;
+  private moveDirection = new Phaser.Math.Vector2(0, 0);
 
   constructor(scene: Phaser.Scene, x: number, y: number, worldMap: WorldMap) {
     super(
@@ -28,9 +38,9 @@ export class Player extends Character {
       x,
       y,
       {
-        [StatType.MOVE_SPEED]: 4,
-        [StatType.SIGHT_RANGE]: 2000,
-        [StatType.AIM_ACCURACY]: 1,
+        [StatType.MOVE_SPEED]: PLAYER_MOVE_SPEED,
+        [StatType.SIGHT_RANGE]: PLAYER_SIGHT_RANGE,
+        [StatType.AIM_ACCURACY]: PLAYER_AIM_ACCURACY,
       },
       HUMANOID_BODY_PLAN,
     );
@@ -44,13 +54,13 @@ export class Player extends Character {
   }
 
   protected createSprite(): Phaser.GameObjects.Image {
-    const tileSize = 48;
+    const tileSize = TILE_SIZE_PX;
     const sprite = this.scene.add.image(
       this.position.x * tileSize + tileSize / 2,
       this.position.y * tileSize + tileSize / 2,
       humanoidTextureKey(HumanoidBodyType.MALE, HumanoidPose.FRONT),
     );
-    sprite.setDepth(10);
+    sprite.setDepth(RENDER_DEPTH_ENTITY_SPRITE);
     return sprite;
   }
 
@@ -60,6 +70,7 @@ export class Player extends Character {
     if (!this.health.isDead()) {
       this.updateFacing();
       this.updateMovement(deltaTime);
+      this.updateSpriteLean();
     }
 
     this.updateSpritePosition();
@@ -83,11 +94,14 @@ export class Player extends Character {
 
     const { pose, flipX } = resolveHumanoidFacing(this.facingAngle);
     const textureKey = humanoidTextureKey(HumanoidBodyType.MALE, pose);
-
     if (this.sprite.texture.key !== textureKey) {
       this.sprite.setTexture(textureKey);
     }
     this.sprite.setFlipX(flipX);
+  }
+
+  private updateSpriteLean(): void {
+    this.sprite.setRotation(HUMANOID_MAX_LEAN_ANGLE * Math.sign(this.moveDirection.x));
   }
 
   private updateMovement(deltaTime: number): void {
@@ -99,10 +113,19 @@ export class Player extends Character {
     if (this.wasd.up.isDown) moveY -= 1;
     if (this.wasd.down.isDown) moveY += 1;
 
-    if (moveX === 0 && moveY === 0) return;
+    if (moveX === 0 && moveY === 0) {
+      this.moveDirection.set(0, 0);
+      return;
+    }
 
     const direction = new Phaser.Math.Vector2(moveX, moveY).normalize();
-    const moveSpeed = this.stats.getValue(StatType.MOVE_SPEED);
+    this.moveDirection.copy(direction);
+
+    const moveAngle = Math.atan2(moveY, moveX);
+    const directionSpeedMultiplier =
+      1 + PLAYER_MOVE_SPEED_DIRECTION_AMPLITUDE * Math.cos(this.facingAngle - moveAngle);
+
+    const moveSpeed = this.stats.getValue(StatType.MOVE_SPEED) * directionSpeedMultiplier;
     const distance = moveSpeed * (deltaTime / 1000);
 
     const nextX = this.position.x + direction.x * distance;
@@ -117,7 +140,7 @@ export class Player extends Character {
   }
 
   private updateSpritePosition(): void {
-    const tileSize = 48;
+    const tileSize = TILE_SIZE_PX;
     this.sprite.setPosition(
       this.position.x * tileSize + tileSize / 2,
       this.position.y * tileSize + tileSize / 2,

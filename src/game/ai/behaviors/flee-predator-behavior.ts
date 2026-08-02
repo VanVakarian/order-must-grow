@@ -1,10 +1,16 @@
+import {
+  AI_FLEE_ANGLE_STEP_RAD,
+  AI_FLEE_DISTANCE_PERCEPTION_MULTIPLIER,
+  AI_FLEE_MIN_DISTANCE,
+  AI_FLEE_RETARGET_INTERVAL_MS,
+} from '../../const';
 import { NPCEntity } from '../../entities/npc-entity';
 import { BehaviorPriority, EntityType } from '../../types';
 import { AIBehavior } from '../ai-behavior';
 
 export class FleePredatorBehavior extends AIBehavior {
   private retargetTimer: number = 0;
-  private retargetInterval: number = 400;
+  private retargetInterval: number = AI_FLEE_RETARGET_INTERVAL_MS;
 
   constructor() {
     super(BehaviorPriority.CRITICAL, 'Fleeing');
@@ -56,14 +62,17 @@ export class FleePredatorBehavior extends AIBehavior {
   private pickFleeTarget(npc: NPCEntity, predatorPos: { x: number; y: number }) {
     const pos = npc.getPosition();
     const worldMap = npc.getWorldMap();
-    const fleeDistance = Math.max(4, Math.round(npc.getPerceptionRadius() * 0.6));
+    const fleeDistance = Math.max(
+      AI_FLEE_MIN_DISTANCE,
+      Math.round(npc.getPerceptionRadius() * AI_FLEE_DISTANCE_PERCEPTION_MULTIPLIER),
+    );
 
     let baseAngle = Math.atan2(pos.y - predatorPos.y, pos.x - predatorPos.x);
     if (Number.isNaN(baseAngle)) {
       baseAngle = Math.random() * Math.PI * 2;
     }
 
-    const offsets = [0, 1, -1, 2, -2, 3, -3, 4].map((step) => step * (Math.PI / 4));
+    const offsets = [0, 1, -1, 2, -2, 3, -3, 4].map((step) => step * AI_FLEE_ANGLE_STEP_RAD);
 
     for (const offset of offsets) {
       const angle = baseAngle + offset;
