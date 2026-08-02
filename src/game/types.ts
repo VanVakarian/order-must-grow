@@ -18,6 +18,7 @@ export interface TileData {
   y: number;
   type: TileType;
   vegetation: VegetationData | null;
+  everSeen: boolean;
 }
 
 export enum EntityType {

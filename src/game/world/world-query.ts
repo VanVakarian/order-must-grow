@@ -47,10 +47,10 @@ export class WorldQuery {
     radius: number,
     predicate: (tile: TileData) => boolean,
   ): Position | null {
-    const minX = Math.max(0, Math.floor(position.x - radius));
-    const maxX = Math.min(this.worldMap.getWidth() - 1, Math.ceil(position.x + radius));
-    const minY = Math.max(0, Math.floor(position.y - radius));
-    const maxY = Math.min(this.worldMap.getHeight() - 1, Math.ceil(position.y + radius));
+    const minX = Math.floor(position.x - radius);
+    const maxX = Math.ceil(position.x + radius);
+    const minY = Math.floor(position.y - radius);
+    const maxY = Math.ceil(position.y + radius);
 
     let nearest: Position | null = null;
     let minDist = Infinity;
@@ -58,7 +58,7 @@ export class WorldQuery {
     for (let y = minY; y <= maxY; y++) {
       for (let x = minX; x <= maxX; x++) {
         const tile = this.worldMap.getTile(x, y);
-        if (!tile || !predicate(tile)) continue;
+        if (!predicate(tile)) continue;
         const dist = Math.hypot(x - position.x, y - position.y);
         if (dist <= radius && dist < minDist) {
           minDist = dist;

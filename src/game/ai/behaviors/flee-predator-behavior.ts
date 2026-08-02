@@ -65,18 +65,13 @@ export class FleePredatorBehavior extends AIBehavior {
 
     const offsets = [0, 1, -1, 2, -2, 3, -3, 4].map((step) => step * (Math.PI / 4));
 
-    const maxX = worldMap.getWidth() - 1;
-    const maxY = worldMap.getHeight() - 1;
-
     for (const offset of offsets) {
       const angle = baseAngle + offset;
       const targetX = Math.round(pos.x + Math.cos(angle) * fleeDistance);
       const targetY = Math.round(pos.y + Math.sin(angle) * fleeDistance);
-      const clampedX = Math.min(maxX, Math.max(0, targetX));
-      const clampedY = Math.min(maxY, Math.max(0, targetY));
 
-      if (worldMap.isWalkable(clampedX, clampedY)) {
-        return { x: clampedX, y: clampedY };
+      if (worldMap.isWalkable(targetX, targetY)) {
+        return { x: targetX, y: targetY };
       }
     }
 

@@ -3,7 +3,7 @@ import { EntityManager } from '../entities/entity-manager';
 import { Player } from '../entities/player';
 import { generateHumanoidTextures, HumanoidBodyType } from '../rendering/humanoid-sprite-generator';
 import { StatType } from '../stats/stat-type';
-import { TileType } from '../types';
+import { Position, TileData, TileType } from '../types';
 import { WorldMap } from '../world/world-map';
 
 enum TextureKey {
@@ -19,18 +19,20 @@ enum TextureKey {
 
 export class MainScene extends Phaser.Scene {
   private tileSize = 48;
-  private mapWidthInTiles = 50;
-  private mapHeightInTiles = 50;
+  private chunkSizeInTiles = 16;
+  private chunkLoadMarginInChunks = 1;
 
   private worldMap!: WorldMap;
   private entityManager!: EntityManager;
   private tileSprites: Map<string, Phaser.GameObjects.Image> = new Map();
   private tileFogSprites: Map<string, Phaser.GameObjects.Image> = new Map();
   private tileFogAmount: Map<string, number> = new Map();
+  private loadedChunks: Set<string> = new Set();
   private player!: Player;
 
   private minZoom = 0.5;
   private maxZoom = 4;
+  private defaultZoom = 1.03;
   private zoomSpeed = 0.0015;
   private cameraLerp = 0.08;
 
@@ -39,8 +41,11 @@ export class MainScene extends Phaser.Scene {
   private highlightedNPCId: string | null = null;
 
   private readonly fovAngle = Phaser.Math.DegToRad(110);
+  private readonly maxConeRangeInTiles = 20;
+  private readonly nearSightRadiusInTiles = 3;
   private readonly fogColor = 0x6f7378;
-  private readonly fogMaxAlpha = 0.5;
+  private readonly fogMaxAlpha = 0.65;
+  private readonly unseenColor = 0x000000;
   private readonly fogFadeOutDurationMs = 2000;
   private readonly fogFadeInDurationMs = 100;
 
@@ -58,17 +63,18 @@ export class MainScene extends Phaser.Scene {
   }
 
   private create() {
-    this.worldMap = new WorldMap(this.mapWidthInTiles, this.mapHeightInTiles);
+    this.worldMap = new WorldMap();
     this.entityManager = new EntityManager();
 
-    this.createMap();
     this.spawnPlayer();
     this.setupCamera();
     this.setupInput();
     this.createSelectionMarker();
+    this.updateChunkStreaming();
   }
 
   override update(_time: number, delta: number) {
+    this.updateChunkStreaming();
     this.updateSelectionMarker();
     this.entityManager.update(delta);
     this.updateTileVisuals();
@@ -110,7 +116,7 @@ export class MainScene extends Phaser.Scene {
 
   private createTileFogGraphics() {
     const graphics = this.add.graphics();
-    graphics.fillStyle(this.fogColor, 1);
+    graphics.fillStyle(0xffffff, 1);
     graphics.fillRect(0, 0, this.tileSize, this.tileSize);
     graphics.generateTexture(TextureKey.TILE_FOG, this.tileSize, this.tileSize);
     graphics.destroy();
@@ -163,34 +169,92 @@ export class MainScene extends Phaser.Scene {
     graphics.destroy();
   }
 
-  private createMap() {
-    const tiles = this.worldMap.getAllTiles();
+  private updateChunkStreaming(): void {
+    const neededChunks = this.computeNeededChunkKeys();
 
-    for (let y = 0; y < this.mapHeightInTiles; y++) {
-      for (let x = 0; x < this.mapWidthInTiles; x++) {
-        const tileData = tiles[y][x];
-        const worldX = x * this.tileSize;
-        const worldY = y * this.tileSize;
+    for (const key of this.loadedChunks) {
+      if (!neededChunks.has(key)) {
+        this.unloadChunk(key);
+      }
+    }
 
-        const textureKey = this.getTileTexture(tileData);
-        const tile = this.add.image(worldX, worldY, textureKey);
-        tile.setOrigin(0, 0);
-        tile.setDepth(0);
+    for (const key of neededChunks) {
+      if (!this.loadedChunks.has(key)) {
+        this.loadChunk(key);
+      }
+    }
 
-        const fog = this.add.image(worldX, worldY, TextureKey.TILE_FOG);
-        fog.setOrigin(0, 0);
-        fog.setDepth(1);
-        fog.setAlpha(this.fogMaxAlpha);
+    this.loadedChunks = neededChunks;
+  }
 
-        const key = `${x},${y}`;
-        this.tileSprites.set(key, tile);
-        this.tileFogSprites.set(key, fog);
-        this.tileFogAmount.set(key, 1);
+  private computeNeededChunkKeys(): Set<string> {
+    const view = this.cameras.main.worldView;
+    const chunkPixelSize = this.chunkSizeInTiles * this.tileSize;
+
+    const minChunkX = Math.floor(view.x / chunkPixelSize) - this.chunkLoadMarginInChunks;
+    const maxChunkX = Math.floor(view.right / chunkPixelSize) + this.chunkLoadMarginInChunks;
+    const minChunkY = Math.floor(view.y / chunkPixelSize) - this.chunkLoadMarginInChunks;
+    const maxChunkY = Math.floor(view.bottom / chunkPixelSize) + this.chunkLoadMarginInChunks;
+
+    const keys = new Set<string>();
+    for (let cy = minChunkY; cy <= maxChunkY; cy++) {
+      for (let cx = minChunkX; cx <= maxChunkX; cx++) {
+        keys.add(`${cx},${cy}`);
+      }
+    }
+
+    return keys;
+  }
+
+  private loadChunk(chunkKey: string): void {
+    const [cx, cy] = chunkKey.split(',').map(Number);
+
+    for (let ly = 0; ly < this.chunkSizeInTiles; ly++) {
+      for (let lx = 0; lx < this.chunkSizeInTiles; lx++) {
+        this.createTileSprites(cx * this.chunkSizeInTiles + lx, cy * this.chunkSizeInTiles + ly);
       }
     }
   }
 
-  private getTileTexture(tileData: any): string {
+  private unloadChunk(chunkKey: string): void {
+    const [cx, cy] = chunkKey.split(',').map(Number);
+
+    for (let ly = 0; ly < this.chunkSizeInTiles; ly++) {
+      for (let lx = 0; lx < this.chunkSizeInTiles; lx++) {
+        const tileKey = `${cx * this.chunkSizeInTiles + lx},${cy * this.chunkSizeInTiles + ly}`;
+
+        this.tileSprites.get(tileKey)?.destroy();
+        this.tileFogSprites.get(tileKey)?.destroy();
+        this.tileSprites.delete(tileKey);
+        this.tileFogSprites.delete(tileKey);
+        this.tileFogAmount.delete(tileKey);
+      }
+    }
+  }
+
+  private createTileSprites(tileX: number, tileY: number): void {
+    const tileData = this.worldMap.getTile(tileX, tileY);
+    const worldX = tileX * this.tileSize;
+    const worldY = tileY * this.tileSize;
+
+    const textureKey = this.getTileTexture(tileData);
+    const tile = this.add.image(worldX, worldY, textureKey);
+    tile.setOrigin(0, 0);
+    tile.setDepth(0);
+
+    const fog = this.add.image(worldX, worldY, TextureKey.TILE_FOG);
+    fog.setOrigin(0, 0);
+    fog.setDepth(1);
+    fog.setTint(tileData.everSeen ? this.fogColor : this.unseenColor);
+    fog.setAlpha(tileData.everSeen ? this.fogMaxAlpha : 1);
+
+    const key = `${tileX},${tileY}`;
+    this.tileSprites.set(key, tile);
+    this.tileFogSprites.set(key, fog);
+    this.tileFogAmount.set(key, 1);
+  }
+
+  private getTileTexture(tileData: TileData): string {
     if (tileData.type === TileType.WATER) {
       return TextureKey.TILE_WATER;
     }
@@ -203,36 +267,37 @@ export class MainScene extends Phaser.Scene {
   }
 
   private updateTileVisuals(): void {
-    const tiles = this.worldMap.getAllTiles();
-
-    for (let y = 0; y < this.mapHeightInTiles; y++) {
-      for (let x = 0; x < this.mapWidthInTiles; x++) {
-        const tileData = tiles[y][x];
-        const sprite = this.tileSprites.get(`${x},${y}`);
-
-        if (sprite) {
-          const textureKey = this.getTileTexture(tileData);
-          if (sprite.texture.key !== textureKey) {
-            sprite.setTexture(textureKey);
-          }
-        }
+    for (const [key, sprite] of this.tileSprites) {
+      const [x, y] = key.split(',').map(Number);
+      const tileData = this.worldMap.getTile(x, y);
+      const textureKey = this.getTileTexture(tileData);
+      if (sprite.texture.key !== textureKey) {
+        sprite.setTexture(textureKey);
       }
     }
   }
 
   private spawnPlayer(): void {
-    let x = Math.floor(this.mapWidthInTiles / 2);
-    let y = Math.floor(this.mapHeightInTiles / 2);
-    let attempts = 0;
+    const spawnPosition = this.findWalkableSpawnPosition();
+    this.player = new Player(this, spawnPosition.x, spawnPosition.y, this.worldMap);
+    this.entityManager.addEntity(this.player);
+  }
 
-    while (!this.worldMap.isWalkable(x, y) && attempts < 200) {
-      x = Math.floor(Math.random() * this.mapWidthInTiles);
-      y = Math.floor(Math.random() * this.mapHeightInTiles);
-      attempts++;
+  private findWalkableSpawnPosition(): Position {
+    if (this.worldMap.isWalkable(0, 0)) {
+      return { x: 0, y: 0 };
     }
 
-    this.player = new Player(this, x, y, this.worldMap);
-    this.entityManager.addEntity(this.player);
+    for (let radius = 1; radius <= 100; radius++) {
+      for (let dx = -radius; dx <= radius; dx++) {
+        for (let dy = -radius; dy <= radius; dy++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
+          if (this.worldMap.isWalkable(dx, dy)) return { x: dx, y: dy };
+        }
+      }
+    }
+
+    return { x: 0, y: 0 };
   }
 
   private createSelectionMarker() {
@@ -248,7 +313,11 @@ export class MainScene extends Phaser.Scene {
     const centerY = sprite.y;
     const facingAngle = this.player.getFacingAngle();
     const halfAngle = this.fovAngle / 2;
-    const sightRange = this.player.getStats().getValue(StatType.SIGHT_RANGE);
+    const coneRange = Math.min(
+      this.player.getStats().getValue(StatType.SIGHT_RANGE),
+      this.maxConeRangeInTiles * this.tileSize,
+    );
+    const nearSightRadius = this.nearSightRadiusInTiles * this.tileSize;
 
     const fadeOutStep = deltaMs / this.fogFadeOutDurationMs;
     const fadeInStep = deltaMs / this.fogFadeInDurationMs;
@@ -263,7 +332,19 @@ export class MainScene extends Phaser.Scene {
       let angleDiff = Math.atan2(dy, dx) - facingAngle;
       angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff)); // normalize to [-PI, PI]
 
-      const isVisible = distance <= sightRange && Math.abs(angleDiff) <= halfAngle;
+      const isInCone = distance <= coneRange && Math.abs(angleDiff) <= halfAngle;
+      const isNear = distance <= nearSightRadius;
+      const isVisible = isInCone || isNear;
+
+      const [tileX, tileY] = key.split(',').map(Number);
+      const tileData = this.worldMap.getTile(tileX, tileY);
+
+      if (isVisible && !tileData.everSeen) {
+        tileData.everSeen = true;
+        fog.setTint(this.fogColor);
+      }
+
+      const maxAlpha = tileData.everSeen ? this.fogMaxAlpha : 1;
       const targetAmount = isVisible ? 0 : 1;
 
       const currentAmount = this.tileFogAmount.get(key) ?? 1;
@@ -274,15 +355,27 @@ export class MainScene extends Phaser.Scene {
 
       if (nextAmount !== currentAmount) {
         this.tileFogAmount.set(key, nextAmount);
-        fog.setAlpha(nextAmount * this.fogMaxAlpha);
+        fog.setAlpha(nextAmount * maxAlpha);
       }
     }
   }
 
   private setupCamera() {
     const camera = this.cameras.main;
-    camera.setZoom(1.5);
+    camera.setZoom(this.defaultZoom);
     camera.startFollow(this.player.getSprite(), false, this.cameraLerp, this.cameraLerp);
+  }
+
+  setZoom(value: number): void {
+    this.cameras.main.setZoom(Phaser.Math.Clamp(value, this.minZoom, this.maxZoom));
+  }
+
+  getZoom(): number {
+    return this.cameras.main.zoom;
+  }
+
+  getZoomRange(): { min: number; max: number } {
+    return { min: this.minZoom, max: this.maxZoom };
   }
 
   private setupInput() {
@@ -345,17 +438,9 @@ export class MainScene extends Phaser.Scene {
       const tileX = Math.floor(worldPoint.x / this.tileSize);
       const tileY = Math.floor(worldPoint.y / this.tileSize);
 
-      const isWithinBounds =
-        tileX >= 0 && tileX < this.mapWidthInTiles && tileY >= 0 && tileY < this.mapHeightInTiles;
-
-      if (isWithinBounds) {
-        this.selectionMarker.setVisible(true);
-        this.selectionMarker.setPosition(tileX * this.tileSize, tileY * this.tileSize);
-        this.game.canvas.style.cursor = 'pointer';
-      } else {
-        this.selectionMarker.setVisible(false);
-        this.game.canvas.style.cursor = 'default';
-      }
+      this.selectionMarker.setVisible(true);
+      this.selectionMarker.setPosition(tileX * this.tileSize, tileY * this.tileSize);
+      this.game.canvas.style.cursor = 'pointer';
     }
   }
 

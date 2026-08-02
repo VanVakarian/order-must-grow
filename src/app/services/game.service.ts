@@ -156,4 +156,34 @@ export class GameService {
 
     scene.getPlayer()?.getHealth().applyDamage(bodyPartType, amount);
   }
+
+  getCameraZoom(): number | null {
+    const game = this.game$$();
+    if (!game) return null;
+
+    const scene = game.scene.getScene('MainScene') as MainScene;
+    if (!scene) return null;
+
+    return scene.getZoom();
+  }
+
+  getCameraZoomRange(): { min: number; max: number } | null {
+    const game = this.game$$();
+    if (!game) return null;
+
+    const scene = game.scene.getScene('MainScene') as MainScene;
+    if (!scene) return null;
+
+    return scene.getZoomRange();
+  }
+
+  setCameraZoom(value: number): void {
+    const game = this.game$$();
+    if (!game) return;
+
+    const scene = game.scene.getScene('MainScene') as MainScene;
+    if (!scene) return;
+
+    scene.setZoom(value);
+  }
 }

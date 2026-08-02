@@ -41,7 +41,7 @@ export class SeekFoodBehavior extends AIBehavior {
       const tile = npc
         .getWorldMap()
         .getTile(Math.floor(currentTarget.x), Math.floor(currentTarget.y));
-      if (!tile || !tile.vegetation) {
+      if (!tile.vegetation) {
         npc.setTargetPosition(null);
       }
       return;
@@ -81,7 +81,7 @@ export class SeekFoodBehavior extends AIBehavior {
     const tileY = Math.floor(pos.y);
 
     const tile = npc.getWorldMap().getTile(tileX, tileY);
-    if (tile && tile.vegetation) {
+    if (tile.vegetation) {
       npc.getWorldMap().removeVegetation(tileX, tileY);
       npc.setNeedValue(NeedType.HUNGER, 0);
     }

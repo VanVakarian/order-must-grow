@@ -1,41 +1,37 @@
 import { Position, TileData, TileType, VegetationType } from '../types';
 
 export class WorldMap {
-  private tiles: TileData[][];
-  private width: number;
-  private height: number;
-  private seed: number;
+  private readonly tiles: Map<string, TileData> = new Map();
+  private readonly seed: number;
 
-  constructor(width: number, height: number) {
-    this.width = width;
-    this.height = height;
-    this.tiles = [];
-    this.seed = Math.random() * 10000;
-    this.generateWorld();
+  constructor(seed: number = Math.random() * 10000) {
+    this.seed = seed;
   }
 
-  private generateWorld(): void {
-    for (let y = 0; y < this.height; y++) {
-      this.tiles[y] = [];
-      for (let x = 0; x < this.width; x++) {
-        const tileType = this.generateTileType(x, y);
-        const tile: TileData = {
-          x,
-          y,
-          type: tileType,
-          vegetation: null,
-        };
+  getTile(x: number, y: number): TileData {
+    const key = `${x},${y}`;
+    let tile = this.tiles.get(key);
 
-        if (tileType === TileType.DIRT && Math.random() < 0.3) {
-          tile.vegetation = {
-            type: VegetationType.GRASS,
-            growthStage: 1,
-          };
-        }
-
-        this.tiles[y][x] = tile;
-      }
+    if (!tile) {
+      tile = this.generateTile(x, y);
+      this.tiles.set(key, tile);
     }
+
+    return tile;
+  }
+
+  private generateTile(x: number, y: number): TileData {
+    const tileType = this.generateTileType(x, y);
+    const tile: TileData = { x, y, type: tileType, vegetation: null, everSeen: false };
+
+    if (tileType === TileType.DIRT && Math.random() < 0.3) {
+      tile.vegetation = {
+        type: VegetationType.GRASS,
+        growthStage: 1,
+      };
+    }
+
+    return tile;
   }
 
   private generateTileType(x: number, y: number): TileType {
@@ -81,70 +77,16 @@ export class WorldMap {
     return (hash - Math.floor(hash)) * 2 - 1;
   }
 
-  getTile(x: number, y: number): TileData | null {
-    if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
-      return null;
-    }
-    return this.tiles[y][x];
-  }
-
   updateTile(x: number, y: number, updates: Partial<TileData>): void {
-    const tile = this.getTile(x, y);
-    if (tile) {
-      Object.assign(tile, updates);
-    }
+    Object.assign(this.getTile(x, y), updates);
   }
 
   removeVegetation(x: number, y: number): void {
-    const tile = this.getTile(x, y);
-    if (tile) {
-      tile.vegetation = null;
-    }
-  }
-
-  findNearestVegetation(pos: Position): Position | null {
-    let nearest: Position | null = null;
-    let minDist = Infinity;
-
-    for (let y = 0; y < this.height; y++) {
-      for (let x = 0; x < this.width; x++) {
-        const tile = this.tiles[y][x];
-        if (tile.vegetation) {
-          const dist = Math.hypot(x - pos.x, y - pos.y);
-          if (dist < minDist) {
-            minDist = dist;
-            nearest = { x, y };
-          }
-        }
-      }
-    }
-
-    return nearest;
-  }
-
-  findNearestWater(pos: Position): Position | null {
-    let nearest: Position | null = null;
-    let minDist = Infinity;
-
-    for (let y = 0; y < this.height; y++) {
-      for (let x = 0; x < this.width; x++) {
-        const tile = this.tiles[y][x];
-        if (tile.type === TileType.WATER) {
-          const dist = Math.hypot(x - pos.x, y - pos.y);
-          if (dist < minDist) {
-            minDist = dist;
-            nearest = { x, y };
-          }
-        }
-      }
-    }
-
-    return nearest;
+    this.getTile(x, y).vegetation = null;
   }
 
   isWalkable(x: number, y: number): boolean {
-    const tile = this.getTile(x, y);
-    return tile !== null && tile.type !== TileType.WATER;
+    return this.getTile(x, y).type !== TileType.WATER;
   }
 
   findPath(start: Position, end: Position): Position[] | null {
@@ -161,19 +103,13 @@ export class WorldMap {
       return null;
     }
 
-    const width = this.width;
-    const height = this.height;
-    const toIndex = (x: number, y: number) => y * width + x;
+    const searchRadius = Math.max(32, Math.hypot(endX - startX, endY - startY) + 16);
+    const toKey = (x: number, y: number) => `${x},${y}`;
 
-    const visited = new Array(width * height).fill(false);
-    const parent = new Array(width * height).fill(-1);
-    const queueX: number[] = [];
-    const queueY: number[] = [];
-
-    const startIndex = toIndex(startX, startY);
-    visited[startIndex] = true;
-    queueX.push(startX);
-    queueY.push(startY);
+    const visited = new Set<string>();
+    const parent = new Map<string, string>();
+    const queue: Position[] = [{ x: startX, y: startY }];
+    visited.add(toKey(startX, startY));
 
     const directions = [
       { x: 0, y: -1 },
@@ -186,43 +122,53 @@ export class WorldMap {
       { x: -1, y: -1 },
     ];
 
-    while (queueX.length > 0) {
-      const x = queueX.shift() as number;
-      const y = queueY.shift() as number;
-      if (x === endX && y === endY) break;
+    let found = false;
+
+    for (let i = 0; i < queue.length; i++) {
+      const current = queue[i];
+      if (current.x === endX && current.y === endY) {
+        found = true;
+        break;
+      }
 
       for (const dir of directions) {
-        const nextX = x + dir.x;
-        const nextY = y + dir.y;
-        if (nextX < 0 || nextX >= width || nextY < 0 || nextY >= height) continue;
+        const nextX = current.x + dir.x;
+        const nextY = current.y + dir.y;
+
+        if (Math.abs(nextX - startX) > searchRadius || Math.abs(nextY - startY) > searchRadius) {
+          continue;
+        }
+
         if (dir.x !== 0 && dir.y !== 0) {
-          if (!this.isWalkable(x + dir.x, y) || !this.isWalkable(x, y + dir.y)) {
+          if (!this.isWalkable(current.x + dir.x, current.y) || !this.isWalkable(current.x, current.y + dir.y)) {
             continue;
           }
         }
-        const nextIndex = toIndex(nextX, nextY);
-        if (visited[nextIndex]) continue;
+
+        const nextKey = toKey(nextX, nextY);
+        if (visited.has(nextKey)) continue;
         if (!this.isWalkable(nextX, nextY)) continue;
-        visited[nextIndex] = true;
-        parent[nextIndex] = toIndex(x, y);
-        queueX.push(nextX);
-        queueY.push(nextY);
+
+        visited.add(nextKey);
+        parent.set(nextKey, toKey(current.x, current.y));
+        queue.push({ x: nextX, y: nextY });
       }
     }
 
-    const endIndex = toIndex(endX, endY);
-    if (!visited[endIndex]) {
+    if (!found) {
       return null;
     }
 
     const path: Position[] = [];
-    let currentIndex = endIndex;
-    while (currentIndex !== startIndex) {
-      const x = currentIndex % width;
-      const y = Math.floor(currentIndex / width);
+    const startKey = toKey(startX, startY);
+    let currentKey = toKey(endX, endY);
+
+    while (currentKey !== startKey) {
+      const [x, y] = currentKey.split(',').map(Number);
       path.push({ x, y });
-      currentIndex = parent[currentIndex];
-      if (currentIndex === -1) return null;
+      const prevKey = parent.get(currentKey);
+      if (!prevKey) return null;
+      currentKey = prevKey;
     }
 
     path.reverse();
@@ -253,7 +199,7 @@ export class WorldMap {
         const checkX = checkPos.x + dir.x;
         const checkY = checkPos.y + dir.y;
         const tile = this.getTile(checkX, checkY);
-        if (tile && tile.type === TileType.WATER) {
+        if (tile.type === TileType.WATER) {
           const distToWater = Math.hypot(pos.x - checkX, pos.y - checkY);
           if (distToWater <= 1.2) {
             return true;
@@ -263,17 +209,5 @@ export class WorldMap {
     }
 
     return false;
-  }
-
-  getWidth(): number {
-    return this.width;
-  }
-
-  getHeight(): number {
-    return this.height;
-  }
-
-  getAllTiles(): TileData[][] {
-    return this.tiles;
   }
 }

@@ -53,8 +53,6 @@ export class SearchPreyBehavior extends AIBehavior {
   private setSearchTarget(npc: NPCEntity, pos: { x: number; y: number }): void {
     const worldMap = npc.getWorldMap();
     const searchDistance = Math.max(4, Math.round(npc.getPerceptionRadius() * 1.5));
-    const maxX = worldMap.getWidth() - 1;
-    const maxY = worldMap.getHeight() - 1;
 
     if (this.searchAngle === null) {
       this.searchAngle = Math.random() * Math.PI * 2;
@@ -64,19 +62,9 @@ export class SearchPreyBehavior extends AIBehavior {
       const angle = this.searchAngle ?? Math.random() * Math.PI * 2;
       const targetX = Math.round(pos.x + Math.cos(angle) * searchDistance);
       const targetY = Math.round(pos.y + Math.sin(angle) * searchDistance);
-      const clampedX = Math.min(maxX, Math.max(0, targetX));
-      const clampedY = Math.min(maxY, Math.max(0, targetY));
-      const wasClamped = clampedX !== targetX || clampedY !== targetY;
 
-      if (worldMap.isWalkable(clampedX, clampedY)) {
-        npc.setTargetPosition({ x: clampedX, y: clampedY });
-        if (npc.getTargetPosition()) {
-          if (wasClamped) {
-            this.reverseSearchAngle();
-          }
-          return;
-        }
-        this.searchAngle = Math.random() * Math.PI * 2;
+      if (worldMap.isWalkable(targetX, targetY)) {
+        npc.setTargetPosition({ x: targetX, y: targetY });
         return;
       }
 
@@ -103,11 +91,6 @@ export class SearchPreyBehavior extends AIBehavior {
 
     const direction = Math.random() < 0.5 ? -1 : 1;
     this.searchAngle = this.normalizeAngle(this.searchAngle + direction * (Math.PI / 4));
-  }
-
-  private reverseSearchAngle(): void {
-    if (this.searchAngle === null) return;
-    this.searchAngle = this.normalizeAngle(this.searchAngle + Math.PI);
   }
 
   private normalizeAngle(angle: number): number {
