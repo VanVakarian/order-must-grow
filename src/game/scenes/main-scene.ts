@@ -37,6 +37,7 @@ import {
   TILE_SIZE_PX,
 } from '../const';
 import { Enemy } from '../entities/enemy';
+import { Entity } from '../entities/entity';
 import { EntityManager } from '../entities/entity-manager';
 import { Player } from '../entities/player';
 import { generateHumanoidTextures, HumanoidBodyType } from '../rendering/humanoid-sprite-generator';
@@ -78,6 +79,7 @@ export class MainScene extends Phaser.Scene {
   private selectionMarker!: Phaser.GameObjects.Image;
 
   private highlightedNPCId: string | null = null;
+  private inspectedEntityIds: string[] = [];
 
   private readonly fovAngle = PLAYER_FOV_ANGLE;
   private readonly maxConeRangeInTiles = PLAYER_MAX_SIGHT_CONE_RANGE_TILES;
@@ -320,7 +322,13 @@ export class MainScene extends Phaser.Scene {
 
   private spawnPlayer(): void {
     const spawnPosition = this.findWalkableSpawnPosition();
-    this.player = new Player(this, spawnPosition.x, spawnPosition.y, this.worldMap, this.entityManager);
+    this.player = new Player(
+      this,
+      spawnPosition.x,
+      spawnPosition.y,
+      this.worldMap,
+      this.entityManager,
+    );
     this.entityManager.addEntity(this.player);
   }
 
@@ -447,6 +455,34 @@ export class MainScene extends Phaser.Scene {
         camera.setZoom(nextZoom);
       },
     );
+
+    this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
+      // Не проверяем номер кнопки: на macOS Ctrl+клик ОС репортит как правую кнопку
+      // (эмуляция вторичного клика), поэтому ориентируемся только на ctrlKey.
+      if (!(pointer.event as MouseEvent | undefined)?.ctrlKey) return;
+
+      const worldPoint = this.screenToWorld(camera, pointer.x, pointer.y, camera.zoom);
+      const hoveredEntity = this.findHoveredEntity(worldPoint);
+      if (hoveredEntity) {
+        this.toggleInspectedEntity(hoveredEntity.getId());
+      }
+    });
+  }
+
+  private findHoveredEntity(worldPoint: Phaser.Math.Vector2): Entity | null {
+    for (const entity of this.entityManager.getAllEntities()) {
+      const sprite = entity.getSprite();
+      const dx = worldPoint.x - sprite.x;
+      const dy = worldPoint.y - sprite.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      const spriteWidth = 'width' in sprite ? sprite.width : TILE_SIZE_PX;
+      if (distance < spriteWidth / 2 + ENTITY_HOVER_HIT_PADDING) {
+        return entity;
+      }
+    }
+
+    return null;
   }
 
   private updateSelectionMarker() {
@@ -456,22 +492,7 @@ export class MainScene extends Phaser.Scene {
     const ctrlHeld = !!(pointer.event as MouseEvent | undefined)?.ctrlKey;
 
     const entities = this.entityManager.getAllEntities();
-    let hoveredNPC = null;
-
-    if (ctrlHeld) {
-      for (const entity of entities) {
-        const sprite = entity.getSprite();
-        const dx = worldPoint.x - sprite.x;
-        const dy = worldPoint.y - sprite.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        const spriteWidth = 'width' in sprite ? sprite.width : TILE_SIZE_PX;
-        if (distance < spriteWidth / 2 + ENTITY_HOVER_HIT_PADDING) {
-          hoveredNPC = entity;
-          break;
-        }
-      }
-    }
+    const hoveredNPC = ctrlHeld ? this.findHoveredEntity(worldPoint) : null;
 
     const highlightedByList =
       hoveredNPC || this.highlightedNPCId === null
@@ -548,5 +569,25 @@ export class MainScene extends Phaser.Scene {
 
   setHighlightedEntityId(entityId: string | null): void {
     this.highlightedNPCId = entityId;
+  }
+
+  toggleInspectedEntity(entityId: string): void {
+    const index = this.inspectedEntityIds.indexOf(entityId);
+    if (index === -1) {
+      this.inspectedEntityIds.push(entityId);
+    } else {
+      this.inspectedEntityIds.splice(index, 1);
+    }
+  }
+
+  removeInspectedEntity(entityId: string): void {
+    const index = this.inspectedEntityIds.indexOf(entityId);
+    if (index !== -1) {
+      this.inspectedEntityIds.splice(index, 1);
+    }
+  }
+
+  getInspectedEntityIds(): string[] {
+    return [...this.inspectedEntityIds];
   }
 }

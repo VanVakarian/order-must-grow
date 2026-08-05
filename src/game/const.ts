@@ -11,11 +11,13 @@ export const PLAYER_AIM_ACCURACY = 1;
 
 export const RENDER_DEPTH_TILE = 0;
 export const RENDER_DEPTH_FOG = 1;
-export const RENDER_DEPTH_WEAPON_BEHIND = 9;
-export const RENDER_DEPTH_ENTITY_SPRITE = 10;
-export const RENDER_DEPTH_WEAPON_FRONT = 11;
-export const RENDER_DEPTH_SELECTION_MARKER = 100;
-export const RENDER_DEPTH_HIGHLIGHT_FRAME = 101;
+// Y-sort: depth сущности = BASE + sprite.y, пересчитывается каждый кадр.
+// Зазор между полосами (1e6) на порядки больше любых реалистичных игровых координат в пикселях.
+export const RENDER_DEPTH_ENTITY_BAND_BASE = 1_000_000;
+export const RENDER_DEPTH_WEAPON_FRONT_OFFSET = 0.5;
+export const RENDER_DEPTH_WEAPON_BEHIND_OFFSET = 0.5;
+export const RENDER_DEPTH_SELECTION_MARKER = 2_000_000;
+export const RENDER_DEPTH_HIGHLIGHT_FRAME = 2_000_001;
 
 export const HUMANOID_CANVAS_WIDTH = 44;
 export const HUMANOID_CANVAS_HEIGHT = 60;

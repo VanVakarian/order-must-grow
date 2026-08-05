@@ -6,7 +6,6 @@ import {
   PLAYER_MOVE_SPEED,
   PLAYER_MOVE_SPEED_DIRECTION_AMPLITUDE,
   PLAYER_SIGHT_RANGE,
-  RENDER_DEPTH_ENTITY_SPRITE,
   TILE_SIZE_PX,
   WEAPON_MOVE_SWAY_OFFSET_PX,
 } from '../const';
@@ -73,7 +72,6 @@ export class Player extends Character {
       this.position.y * tileSize + tileSize / 2,
       humanoidTextureKey(HumanoidBodyType.MALE, HumanoidPose.FRONT),
     );
-    sprite.setDepth(RENDER_DEPTH_ENTITY_SPRITE);
     return sprite;
   }
 
@@ -148,14 +146,6 @@ export class Player extends Character {
     if (this.worldMap.isWalkable(Math.round(this.position.x), Math.round(nextY))) {
       this.position.y = nextY;
     }
-  }
-
-  private updateSpritePosition(): void {
-    const tileSize = TILE_SIZE_PX;
-    this.sprite.setPosition(
-      this.position.x * tileSize + tileSize / 2,
-      this.position.y * tileSize + tileSize / 2,
-    );
   }
 
   private setupAttackInput(): void {

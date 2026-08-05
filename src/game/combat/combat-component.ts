@@ -4,6 +4,8 @@ import {
   ATTACK_SLASH_DURATION_MS,
   ATTACK_THRUST_DISTANCE_PX,
   ATTACK_THRUST_DURATION_MS,
+  RENDER_DEPTH_WEAPON_BEHIND_OFFSET,
+  RENDER_DEPTH_WEAPON_FRONT_OFFSET,
   TILE_SIZE_PX,
   WEAPON_SPRITE_ORIGIN_X,
   WEAPON_SPRITE_ORIGIN_Y,
@@ -12,7 +14,7 @@ import { pickRandomBodyPart } from '../health/body-part';
 import type { HealthComponent } from '../health/health-component';
 import { resolveHumanoidFacing } from '../rendering/humanoid-sprite-generator';
 import { Position } from '../types';
-import { resolveWeaponPoseTransform } from './weapon-pose';
+import { resolveWeaponPoseTransform, WeaponLayer } from './weapon-pose';
 import { MeleeAttackMove, WEAPON_DEFINITIONS, WeaponDefinition } from './weapon-template';
 import { AttackAnimationType, WeaponType } from './weapon-type';
 
@@ -60,6 +62,7 @@ export class CombatComponent {
     ownerSpriteY: number,
     facingAngle: number,
     swayOffsetX: number,
+    ownerDepth: number,
   ): void {
     if (this.cooldownRemainingMs > 0) {
       this.cooldownRemainingMs = Math.max(0, this.cooldownRemainingMs - deltaTime);
@@ -76,7 +79,12 @@ export class CombatComponent {
     );
     this.weaponSprite.setRotation(transform.rotation);
     this.weaponSprite.setFlipY(transform.flipY);
-    this.weaponSprite.setDepth(transform.depth);
+    this.weaponSprite.setDepth(
+      ownerDepth +
+        (transform.layer === WeaponLayer.FRONT
+          ? RENDER_DEPTH_WEAPON_FRONT_OFFSET
+          : -RENDER_DEPTH_WEAPON_BEHIND_OFFSET),
+    );
     this.currentFlipY = transform.flipY;
   }
 
@@ -85,7 +93,8 @@ export class CombatComponent {
 
     this.cooldownRemainingMs = this.weapon.attackCooldownMs;
 
-    const move = this.weapon.attackMoves[Math.floor(Math.random() * this.weapon.attackMoves.length)];
+    const move =
+      this.weapon.attackMoves[Math.floor(Math.random() * this.weapon.attackMoves.length)];
     this.playAttackAnimation(move.animation);
 
     if (target && this.isInRange(attackerPosition, target)) {
@@ -100,7 +109,10 @@ export class CombatComponent {
     if (!this.weapon || target.getHealth().isDead()) return false;
 
     const targetPosition = target.getPosition();
-    const distance = Math.hypot(targetPosition.x - attackerPosition.x, targetPosition.y - attackerPosition.y);
+    const distance = Math.hypot(
+      targetPosition.x - attackerPosition.x,
+      targetPosition.y - attackerPosition.y,
+    );
     return distance <= this.weapon.attackRangeTiles;
   }
 

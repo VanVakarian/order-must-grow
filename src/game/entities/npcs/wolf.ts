@@ -5,7 +5,6 @@ import { SeekPreyBehavior } from '../../ai/behaviors/seek-prey-behavior';
 import { SeekWaterBehavior } from '../../ai/behaviors/seek-water-behavior';
 import { WanderBehavior } from '../../ai/behaviors/wander-behavior';
 import {
-  RENDER_DEPTH_ENTITY_SPRITE,
   TILE_SIZE_PX,
   WOLF_BASE_MOVE_SPEED_MIN,
   WOLF_BASE_MOVE_SPEED_RANDOM_RANGE,
@@ -38,8 +37,10 @@ export class Wolf extends NPCEntity {
   }
 
   private randomizeParameters(): void {
-    this.baseMoveSpeed = WOLF_BASE_MOVE_SPEED_MIN + Math.random() * WOLF_BASE_MOVE_SPEED_RANDOM_RANGE;
-    this.urgentMoveSpeed = WOLF_URGENT_MOVE_SPEED_MIN + Math.random() * WOLF_URGENT_MOVE_SPEED_RANDOM_RANGE;
+    this.baseMoveSpeed =
+      WOLF_BASE_MOVE_SPEED_MIN + Math.random() * WOLF_BASE_MOVE_SPEED_RANDOM_RANGE;
+    this.urgentMoveSpeed =
+      WOLF_URGENT_MOVE_SPEED_MIN + Math.random() * WOLF_URGENT_MOVE_SPEED_RANDOM_RANGE;
     this.moveSpeed = this.baseMoveSpeed;
   }
 
@@ -58,7 +59,6 @@ export class Wolf extends NPCEntity {
     const spriteWidth = spriteHeight * ratio;
 
     sprite.setDisplaySize(spriteWidth, spriteHeight);
-    sprite.setDepth(RENDER_DEPTH_ENTITY_SPRITE);
 
     return sprite;
   }

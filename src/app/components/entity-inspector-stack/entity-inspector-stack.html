@@ -1,0 +1,66 @@
+<div class="inspector-stack">
+  @for (snapshot of snapshots$$(); track snapshot.entityId) {
+    <div class="panel">
+      <div class="panel-header">
+        <span class="title">{{ snapshot.displayName }}</span>
+        <span class="position">{{ snapshot.position.x | number:'1.0-0' }},
+          {{ snapshot.position.y | number:'1.0-0' }}</span>
+        <button type="button"
+                class="close-btn"
+                (click)="close(snapshot.entityId)">✕</button>
+      </div>
+
+      <div class="panel-body">
+        @for (section of snapshot.sections; track section.title) {
+          <div class="section">
+            <div class="section-title">{{ section.title }}</div>
+
+            @switch (section.kind) {
+              @case ('rows') {
+                @for (row of section.rows; track row.label) {
+                  <div class="row">
+                    <span class="row-label">{{ row.label }}</span>
+                    <span class="row-value">{{ row.value }}</span>
+                  </div>
+                }
+              }
+              @case ('bodyParts') {
+                <div class="parts">
+                  @for (part of section.parts; track part.type) {
+                    <div class="part-item">
+                      <div class="part-header">
+                        <span class="part-label">{{ part.label }}</span>
+                        @if (part.vital) {
+                          <span class="vital-tag">vital</span>
+                        }
+                        <span class="part-status"
+                              [style.color]="getPartColor(part.healthRatio, part.destroyed)">
+                          {{ part.destroyed ? 'destroyed' : (part.healthRatio * 100 | number:'1.0-0') + '%' }}
+                        </span>
+                      </div>
+                      <div class="part-bar">
+                        <div class="part-fill"
+                             [style.width.%]="part.healthRatio * 100"
+                             [style.background-color]="getPartColor(part.healthRatio, part.destroyed)">
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+              @case ('log') {
+                @if (section.entries.length === 0) {
+                  <div class="no-data">No events yet</div>
+                } @else {
+                  @for (logEntry of section.entries; track logEntry.timestamp) {
+                    <div class="log-entry">{{ logEntry.message }}</div>
+                  }
+                }
+              }
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

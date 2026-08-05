@@ -5,7 +5,9 @@ import {
   HIGHLIGHT_FRAME_CORNER_RADIUS,
   HIGHLIGHT_FRAME_LINE_WIDTH,
   HIGHLIGHT_FRAME_PADDING,
+  RENDER_DEPTH_ENTITY_BAND_BASE,
   RENDER_DEPTH_HIGHLIGHT_FRAME,
+  TILE_SIZE_PX,
 } from '../const';
 import { EntityType, Position } from '../types';
 
@@ -26,6 +28,7 @@ export abstract class Entity {
     this.type = type;
     this.position = { x, y };
     this.sprite = this.createSprite();
+    this.updateRenderDepth();
     this.highlightFrame = this.createHighlightFrame();
   }
 
@@ -35,6 +38,23 @@ export abstract class Entity {
     | Phaser.GameObjects.Sprite;
 
   abstract update(deltaTime: number): void;
+
+  // Y-sort: чем ниже спрайт на экране, тем ближе к камере — тем выше должен рисоваться.
+  protected updateRenderDepth(): void {
+    this.sprite.setDepth(RENDER_DEPTH_ENTITY_BAND_BASE + this.sprite.y);
+  }
+
+  getDepth(): number {
+    return this.sprite.depth;
+  }
+
+  protected updateSpritePosition(): void {
+    this.sprite.setPosition(
+      this.position.x * TILE_SIZE_PX + TILE_SIZE_PX / 2,
+      this.position.y * TILE_SIZE_PX + TILE_SIZE_PX / 2,
+    );
+    this.updateRenderDepth();
+  }
 
   private createHighlightFrame(): Phaser.GameObjects.Graphics {
     const graphics = this.scene.add.graphics();

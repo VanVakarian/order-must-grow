@@ -7,7 +7,6 @@ import {
   NPC_DIRECTION_CHANGE_THRESHOLD,
   NPC_NEED_MAX_VALUE,
   NPC_WAYPOINT_ARRIVAL_DISTANCE,
-  TILE_SIZE_PX,
 } from '../const';
 import { EntityType, Need, NeedType, Position } from '../types';
 import { WorldMap } from '../world/world-map';
@@ -147,14 +146,6 @@ export abstract class NPCEntity extends Entity {
         }
       }
     }
-  }
-
-  protected updateSpritePosition(): void {
-    const tileSize = TILE_SIZE_PX;
-    this.sprite.setPosition(
-      this.position.x * tileSize + tileSize / 2,
-      this.position.y * tileSize + tileSize / 2,
-    );
   }
 
   getNeed(type: NeedType): Need | undefined {

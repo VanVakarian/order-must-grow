@@ -4,8 +4,8 @@ import { WeaponType } from '../combat/weapon-type';
 import { HUMANOID_FRONT_FACING_ANGLE } from '../const';
 import { BodyPlan } from '../health/body-part-template';
 import { HealthComponent } from '../health/health-component';
-import { StatsComponent } from '../stats/stats-component';
 import { StatType } from '../stats/stat-type';
+import { StatsComponent } from '../stats/stats-component';
 import { EntityType } from '../types';
 import { Entity } from './entity';
 
@@ -60,7 +60,14 @@ export abstract class Character extends Entity {
   }
 
   protected tickCombat(deltaTime: number): void {
-    this.combat.update(deltaTime, this.sprite.x, this.sprite.y, this.facingAngle, this.weaponSwayOffsetX);
+    this.combat.update(
+      deltaTime,
+      this.sprite.x,
+      this.sprite.y,
+      this.facingAngle,
+      this.weaponSwayOffsetX,
+      this.getDepth(),
+    );
   }
 
   protected tryAttack(target: CombatTarget | null): void {

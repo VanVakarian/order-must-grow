@@ -1,6 +1,7 @@
 import { computed, Injectable, signal } from '@angular/core';
 import Phaser from 'phaser';
 import { gameConfig } from '../../game/config';
+import { Character } from '../../game/entities/character';
 import { NPCEntity } from '../../game/entities/npc-entity';
 import { BodyPartType } from '../../game/health/body-part-type';
 import { DeathCause } from '../../game/health/health-component';
@@ -35,6 +36,30 @@ export interface CharacterHealthSnapshot {
   moveSpeed: number;
   sightRange: number;
   aimAccuracy: number;
+}
+
+export interface InspectorRow {
+  label: string;
+  value: string;
+}
+
+export interface InspectorLogEntry {
+  timestamp: number;
+  message: string;
+}
+
+// "kind" — дискриминант: какой блок рендерить в инспекторе. Новый тип данных для
+// будущих сущностей добавляется сюда новым вариантом, без изменения UI-компонента.
+export type InspectorSection =
+  | { kind: 'rows'; title: string; rows: InspectorRow[] }
+  | { kind: 'bodyParts'; title: string; parts: BodyPartSnapshot[] }
+  | { kind: 'log'; title: string; entries: InspectorLogEntry[] };
+
+export interface InspectorSnapshot {
+  entityId: string;
+  displayName: string;
+  position: { x: number; y: number };
+  sections: InspectorSection[];
 }
 
 @Injectable({
@@ -185,5 +210,91 @@ export class GameService {
     if (!scene) return;
 
     scene.setZoom(value);
+  }
+
+  getInspectedEntityIds(): string[] {
+    const game = this.game$$();
+    if (!game) return [];
+
+    const scene = game.scene.getScene('MainScene') as MainScene;
+    if (!scene) return [];
+
+    return scene.getInspectedEntityIds();
+  }
+
+  closeInspector(entityId: string): void {
+    const game = this.game$$();
+    if (!game) return;
+
+    const scene = game.scene.getScene('MainScene') as MainScene;
+    if (!scene) return;
+
+    scene.removeInspectedEntity(entityId);
+  }
+
+  getInspectorSnapshot(entityId: string): InspectorSnapshot | null {
+    const game = this.game$$();
+    if (!game) return null;
+
+    const scene = game.scene.getScene('MainScene') as MainScene;
+    if (!scene) return null;
+
+    const entity = scene
+      .getEntityManager()
+      .getAllEntities()
+      .find((e) => e.getId() === entityId);
+    if (!entity) return null;
+
+    const displayName = `${entity.getType()} #${entityId.slice(0, 8)}`;
+    const position = entity.getPosition();
+    const sections: InspectorSection[] = [];
+
+    if (entity instanceof Character) {
+      const health = entity.getHealth();
+      const stats = entity.getStats();
+
+      const rows: InspectorRow[] = [
+        { label: 'Move speed', value: stats.getValue(StatType.MOVE_SPEED).toFixed(1) },
+        { label: 'Sight range', value: stats.getValue(StatType.SIGHT_RANGE).toFixed(0) },
+        { label: 'Aim accuracy', value: stats.getValue(StatType.AIM_ACCURACY).toFixed(2) },
+        { label: 'Blood', value: `${health.getBloodLevel().toFixed(0)}%` },
+      ];
+      if (health.getBleedRate() > 0) {
+        rows.push({ label: 'Bleeding', value: `${health.getBleedRate().toFixed(1)}/s` });
+      }
+      if (health.isDead()) {
+        rows.push({ label: 'Status', value: `DEAD — ${health.getDeathCause()}` });
+      }
+
+      sections.push({ kind: 'rows', title: 'Stats', rows });
+      sections.push({
+        kind: 'bodyParts',
+        title: 'Body parts',
+        parts: health.getParts().map((part) => ({
+          type: part.type,
+          label: part.label,
+          healthRatio: part.getHealthRatio(),
+          destroyed: part.isDestroyed(),
+          vital: part.vital,
+        })),
+      });
+      sections.push({ kind: 'log', title: 'Event log', entries: [] });
+    } else if (entity instanceof NPCEntity) {
+      const hunger = entity.getNeed(NeedType.HUNGER);
+      const thirst = entity.getNeed(NeedType.THIRST);
+
+      sections.push({
+        kind: 'rows',
+        title: 'Status',
+        rows: [
+          { label: 'Behavior', value: entity.getCurrentBehaviorName() },
+          { label: 'Hunger', value: hunger ? `${Math.round(hunger.value)}%` : '—' },
+          { label: 'Thirst', value: thirst ? `${Math.round(thirst.value)}%` : '—' },
+        ],
+      });
+      sections.push({ kind: 'log', title: 'Event log', entries: [] });
+    }
+
+    return { entityId, displayName, position, sections };
   }
 }

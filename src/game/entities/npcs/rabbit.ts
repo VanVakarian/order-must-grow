@@ -17,7 +17,6 @@ import {
   RABBIT_THIRST_RATE_RANDOM_RANGE,
   RABBIT_URGENT_MOVE_SPEED_MIN,
   RABBIT_URGENT_MOVE_SPEED_RANDOM_RANGE,
-  RENDER_DEPTH_ENTITY_SPRITE,
   TILE_SIZE_PX,
 } from '../../const';
 import { EntityType, NeedType } from '../../types';
@@ -39,8 +38,10 @@ export class Rabbit extends NPCEntity {
   }
 
   private randomizeParameters(): void {
-    this.baseMoveSpeed = RABBIT_BASE_MOVE_SPEED_MIN + Math.random() * RABBIT_BASE_MOVE_SPEED_RANDOM_RANGE;
-    this.urgentMoveSpeed = RABBIT_URGENT_MOVE_SPEED_MIN + Math.random() * RABBIT_URGENT_MOVE_SPEED_RANDOM_RANGE;
+    this.baseMoveSpeed =
+      RABBIT_BASE_MOVE_SPEED_MIN + Math.random() * RABBIT_BASE_MOVE_SPEED_RANDOM_RANGE;
+    this.urgentMoveSpeed =
+      RABBIT_URGENT_MOVE_SPEED_MIN + Math.random() * RABBIT_URGENT_MOVE_SPEED_RANDOM_RANGE;
     this.moveSpeed = this.baseMoveSpeed;
   }
 
@@ -59,7 +60,6 @@ export class Rabbit extends NPCEntity {
     const spriteWidth = spriteHeight * ratio;
 
     sprite.setDisplaySize(spriteWidth, spriteHeight);
-    sprite.setDepth(RENDER_DEPTH_ENTITY_SPRITE);
 
     return sprite;
   }

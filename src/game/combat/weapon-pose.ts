@@ -1,18 +1,24 @@
 import {
-  RENDER_DEPTH_WEAPON_BEHIND,
-  RENDER_DEPTH_WEAPON_FRONT,
   WEAPON_HAND_OFFSET_X_PX,
   WEAPON_HAND_OFFSET_Y_PX,
   WEAPON_PROFILE_OFFSET_X_PX,
 } from '../const';
 import { HumanoidPose } from '../rendering/humanoid-sprite-generator';
 
+// Слой оружия относительно СВОЕГО владельца (не глобальный) — итоговый depth
+// считает CombatComponent как ownerDepth ± offset, чтобы оружие всегда
+// сортировалось вместе со своим телом в общем Y-sort.
+export enum WeaponLayer {
+  FRONT = 'front',
+  BEHIND = 'behind',
+}
+
 export interface WeaponPoseTransform {
   offsetX: number;
   offsetY: number;
   rotation: number;
   flipY: boolean;
-  depth: number;
+  layer: WeaponLayer;
 }
 
 // Базовая ориентация текстуры оружия: остриё смотрит вправо (rotation=0).
@@ -24,7 +30,7 @@ const FRONT: WeaponPoseTransform = {
   offsetY: WEAPON_HAND_OFFSET_Y_PX,
   rotation: Math.PI / 2,
   flipY: true,
-  depth: RENDER_DEPTH_WEAPON_FRONT,
+  layer: WeaponLayer.FRONT,
 };
 
 // Позиция 3: спиной к нам, оружие справа, остриём вверх, за телом.
@@ -33,7 +39,7 @@ const BACK: WeaponPoseTransform = {
   offsetY: WEAPON_HAND_OFFSET_Y_PX,
   rotation: -Math.PI / 2,
   flipY: true,
-  depth: RENDER_DEPTH_WEAPON_BEHIND,
+  layer: WeaponLayer.BEHIND,
 };
 
 // Позиция 2: правым боком (facingAngle ~0°), оружие перед корпусом, поверх тела.
@@ -42,7 +48,7 @@ const SIDE_NEAR: WeaponPoseTransform = {
   offsetY: WEAPON_HAND_OFFSET_Y_PX,
   rotation: 0,
   flipY: false,
-  depth: RENDER_DEPTH_WEAPON_FRONT,
+  layer: WeaponLayer.FRONT,
 };
 
 // Позиция 4: левым боком (facingAngle ~180°), оружие позади корпуса, за телом.
@@ -51,10 +57,13 @@ const SIDE_FAR: WeaponPoseTransform = {
   offsetY: WEAPON_HAND_OFFSET_Y_PX,
   rotation: Math.PI,
   flipY: true,
-  depth: RENDER_DEPTH_WEAPON_BEHIND,
+  layer: WeaponLayer.BEHIND,
 };
 
-export function resolveWeaponPoseTransform(pose: HumanoidPose, flipX: boolean): WeaponPoseTransform {
+export function resolveWeaponPoseTransform(
+  pose: HumanoidPose,
+  flipX: boolean,
+): WeaponPoseTransform {
   switch (pose) {
     case HumanoidPose.FRONT:
       return FRONT;
