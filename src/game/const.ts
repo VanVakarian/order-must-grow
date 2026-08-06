@@ -4,8 +4,17 @@ export const TILE_SIZE_PX = 48;
 
 export const GAME_BACKGROUND_COLOR = '#2d2d2d';
 
-export const PLAYER_MOVE_SPEED = 4;
-export const PLAYER_MOVE_SPEED_DIRECTION_AMPLITUDE = 0.35;
+// Тайл = 1 метр, поэтому скорости в тайлах/сек численно равны м/с.
+export const PLAYER_WALK_SPEED = 3; // быстрый шаг
+export const PLAYER_RUN_SPEED = 7; // бег тренированного спортсмена, включается на Shift
+// Плавный переход текущей скорости к целевой (старт/стоп, шаг/бег, любые их сочетания) —
+// разгон медленнее торможения, человек тормозит быстрее, чем разгоняется.
+export const PLAYER_ACCELERATION_MPS2 = 8;
+export const PLAYER_DECELERATION_MPS2 = 16;
+// Множитель скорости при движении строго вперёд (по направлению взгляда) — всегда 1 (без буста).
+// При отклонении направления движения от взгляда скорость линейно проседает,
+// достигая минимума (1 - это значение) при движении строго назад.
+export const PLAYER_BACKWARD_SPEED_PENALTY = 0.5;
 export const PLAYER_SIGHT_RANGE = 2000;
 export const PLAYER_AIM_ACCURACY = 1;
 
@@ -21,6 +30,9 @@ export const RENDER_DEPTH_HIGHLIGHT_FRAME = 2_000_001;
 
 export const HUMANOID_CANVAS_WIDTH = 44;
 export const HUMANOID_CANVAS_HEIGHT = 60;
+// Базовая геометрия (HUMANOID_*, ниже) откалибрована в масштабе "1 канвас = 1 тайл = 1 метр".
+// Этот множитель применяется к ней при генерации текстуры — рост персонажа в метрах.
+export const HUMANOID_HEIGHT_SCALE = 1.8;
 export const HUMANOID_HEAD_RADIUS = 11;
 export const HUMANOID_HEAD_CENTER_Y = 15;
 export const HUMANOID_TORSO_Y = 24;
@@ -177,12 +189,13 @@ export const DEBUG_UI_POLL_INTERVAL_MS = 100;
 export const KNIFE_DAMAGE = 8;
 export const KNIFE_ATTACK_RANGE_TILES = 1;
 export const KNIFE_ATTACK_COOLDOWN_MS = 700;
-export const KNIFE_SPRITE_LENGTH_SCALE = 0.5;
+export const KNIFE_SPRITE_LENGTH_SCALE = 0.75;
 
 export const WEAPON_SPRITE_ORIGIN_X = 0.25;
 export const WEAPON_SPRITE_ORIGIN_Y = 0.5;
-export const WEAPON_HAND_OFFSET_X_PX = 12;
-export const WEAPON_HAND_OFFSET_Y_PX = 8;
+export const WEAPON_HAND_OFFSET_X_PX = 16;
+export const WEAPON_HAND_OFFSET_Y_PX = 10;
+export const WEAPON_SIDE_HAND_OFFSET_Y_PX = 12;
 export const WEAPON_PROFILE_OFFSET_X_PX = 3;
 export const WEAPON_MOVE_SWAY_OFFSET_PX = 3;
 

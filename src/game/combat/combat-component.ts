@@ -28,8 +28,13 @@ export class CombatComponent {
   private weapon: WeaponDefinition | null = null;
   private weaponSprite: Phaser.GameObjects.Image | null = null;
   private cooldownRemainingMs = 0;
-  private isAnimating = false;
   private currentFlipY = false;
+  // Смещение текущей анимации атаки поверх базовой позы (0 = поза покоя, 1 = пик выпада/взмаха).
+  // Базовая поза каждый кадр пересчитывается от позиции владельца, поэтому оружие
+  // никогда не "отвязывается" от персонажа, даже во время анимации.
+  private animationType: AttackAnimationType | null = null;
+  private animationProgress = 0;
+  private slashDirection = 1;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -68,16 +73,24 @@ export class CombatComponent {
       this.cooldownRemainingMs = Math.max(0, this.cooldownRemainingMs - deltaTime);
     }
 
-    if (!this.weaponSprite || this.isAnimating) return;
+    if (!this.weaponSprite) return;
 
     const { pose, flipX } = resolveHumanoidFacing(facingAngle);
     const transform = resolveWeaponPoseTransform(pose, flipX);
 
-    this.weaponSprite.setPosition(
-      ownerSpriteX + transform.offsetX + swayOffsetX,
-      ownerSpriteY + transform.offsetY,
-    );
-    this.weaponSprite.setRotation(transform.rotation);
+    let offsetX = transform.offsetX;
+    let offsetY = transform.offsetY;
+    let rotation = transform.rotation;
+
+    if (this.animationType === AttackAnimationType.THRUST) {
+      offsetX += Math.cos(rotation) * ATTACK_THRUST_DISTANCE_PX * this.animationProgress;
+      offsetY += Math.sin(rotation) * ATTACK_THRUST_DISTANCE_PX * this.animationProgress;
+    } else if (this.animationType === AttackAnimationType.SLASH) {
+      rotation += this.slashDirection * ATTACK_SLASH_ANGLE_RAD * this.animationProgress;
+    }
+
+    this.weaponSprite.setPosition(ownerSpriteX + offsetX + swayOffsetX, ownerSpriteY + offsetY);
+    this.weaponSprite.setRotation(rotation);
     this.weaponSprite.setFlipY(transform.flipY);
     this.weaponSprite.setDepth(
       ownerDepth +
@@ -123,37 +136,29 @@ export class CombatComponent {
   private playAttackAnimation(animation: AttackAnimationType): void {
     if (!this.weaponSprite) return;
 
-    this.isAnimating = true;
-    const onComplete = () => {
-      this.isAnimating = false;
-    };
+    this.animationType = animation;
+    this.animationProgress = 0;
+    this.slashDirection = this.currentFlipY ? -1 : 1;
 
-    if (animation === AttackAnimationType.THRUST) {
-      const bladeAngle = this.weaponSprite.rotation;
-      const originX = this.weaponSprite.x;
-      const originY = this.weaponSprite.y;
+    const progress = { value: 0 };
+    const duration =
+      animation === AttackAnimationType.THRUST
+        ? ATTACK_THRUST_DURATION_MS
+        : ATTACK_SLASH_DURATION_MS;
 
-      this.scene.tweens.add({
-        targets: this.weaponSprite,
-        x: originX + Math.cos(bladeAngle) * ATTACK_THRUST_DISTANCE_PX,
-        y: originY + Math.sin(bladeAngle) * ATTACK_THRUST_DISTANCE_PX,
-        duration: ATTACK_THRUST_DURATION_MS / 2,
-        yoyo: true,
-        ease: 'Quad.easeOut',
-        onComplete,
-      });
-      return;
-    }
-
-    const baseRotation = this.weaponSprite.rotation;
-    const slashDirection = this.currentFlipY ? -1 : 1;
     this.scene.tweens.add({
-      targets: this.weaponSprite,
-      rotation: baseRotation + slashDirection * ATTACK_SLASH_ANGLE_RAD,
-      duration: ATTACK_SLASH_DURATION_MS / 2,
+      targets: progress,
+      value: 1,
+      duration: duration / 2,
       yoyo: true,
       ease: 'Quad.easeOut',
-      onComplete,
+      onUpdate: () => {
+        this.animationProgress = progress.value;
+      },
+      onComplete: () => {
+        this.animationType = null;
+        this.animationProgress = 0;
+      },
     });
   }
 }

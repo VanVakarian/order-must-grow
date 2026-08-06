@@ -5,6 +5,7 @@ import {
   HUMANOID_EYE_RADIUS,
   HUMANOID_HEAD_CENTER_Y,
   HUMANOID_HEAD_RADIUS,
+  HUMANOID_HEIGHT_SCALE,
   HUMANOID_OUTLINE_COLOR,
   HUMANOID_OUTLINE_WIDTH,
   HUMANOID_SIDE_TORSO_WIDTH,
@@ -30,23 +31,28 @@ export interface HumanoidFacing {
   flipX: boolean;
 }
 
-const CANVAS_WIDTH = HUMANOID_CANVAS_WIDTH;
-const CANVAS_HEIGHT = HUMANOID_CANVAS_HEIGHT;
+// Текстура рисуется сразу в целевом разрешении (canvas * HUMANOID_HEIGHT_SCALE),
+// а не в базовом с последующим растягиванием спрайтом — иначе линии контура
+// получаются мыльными из-за апскейла маленького растра.
+const SCALE = HUMANOID_HEIGHT_SCALE;
+
+const CANVAS_WIDTH = HUMANOID_CANVAS_WIDTH * SCALE;
+const CANVAS_HEIGHT = HUMANOID_CANVAS_HEIGHT * SCALE;
 const CENTER_X = CANVAS_WIDTH / 2;
 
-const HEAD_RADIUS = HUMANOID_HEAD_RADIUS;
-const HEAD_CY = HUMANOID_HEAD_CENTER_Y;
+const HEAD_RADIUS = HUMANOID_HEAD_RADIUS * SCALE;
+const HEAD_CY = HUMANOID_HEAD_CENTER_Y * SCALE;
 
-const TORSO_Y = HUMANOID_TORSO_Y;
-const TORSO_WIDTH = HUMANOID_TORSO_WIDTH;
-const SIDE_TORSO_WIDTH = HUMANOID_SIDE_TORSO_WIDTH;
-const TORSO_HEIGHT = HUMANOID_TORSO_HEIGHT;
-const TORSO_RADIUS = HUMANOID_TORSO_RADIUS;
+const TORSO_Y = HUMANOID_TORSO_Y * SCALE;
+const TORSO_WIDTH = HUMANOID_TORSO_WIDTH * SCALE;
+const SIDE_TORSO_WIDTH = HUMANOID_SIDE_TORSO_WIDTH * SCALE;
+const TORSO_HEIGHT = HUMANOID_TORSO_HEIGHT * SCALE;
+const TORSO_RADIUS = HUMANOID_TORSO_RADIUS * SCALE;
 
 const SKIN_COLOR = HUMANOID_SKIN_COLOR;
 const OUTLINE_COLOR = HUMANOID_OUTLINE_COLOR;
-const OUTLINE_WIDTH = HUMANOID_OUTLINE_WIDTH;
-const EYE_RADIUS = HUMANOID_EYE_RADIUS;
+const OUTLINE_WIDTH = HUMANOID_OUTLINE_WIDTH * SCALE;
+const EYE_RADIUS = HUMANOID_EYE_RADIUS * SCALE;
 
 export function humanoidTextureKey(bodyType: HumanoidBodyType, pose: HumanoidPose): string {
   return `humanoid-${bodyType}-${pose}`;
@@ -119,11 +125,11 @@ function drawTorsoAndHead(
 
 function drawEyes(graphics: Phaser.GameObjects.Graphics): void {
   graphics.fillStyle(OUTLINE_COLOR, 1);
-  graphics.fillCircle(CENTER_X - 4, HEAD_CY - 2, EYE_RADIUS);
-  graphics.fillCircle(CENTER_X + 4, HEAD_CY - 2, EYE_RADIUS);
+  graphics.fillCircle(CENTER_X - 4 * SCALE, HEAD_CY - 2 * SCALE, EYE_RADIUS);
+  graphics.fillCircle(CENTER_X + 4 * SCALE, HEAD_CY - 2 * SCALE, EYE_RADIUS);
 }
 
 function drawSideEye(graphics: Phaser.GameObjects.Graphics): void {
   graphics.fillStyle(OUTLINE_COLOR, 1);
-  graphics.fillCircle(CENTER_X + 5, HEAD_CY - 2, EYE_RADIUS);
+  graphics.fillCircle(CENTER_X + 5 * SCALE, HEAD_CY - 2 * SCALE, EYE_RADIUS);
 }

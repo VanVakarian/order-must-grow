@@ -2,10 +2,13 @@ import Phaser from 'phaser';
 import { WeaponType } from '../combat/weapon-type';
 import {
   HUMANOID_MAX_LEAN_ANGLE,
+  PLAYER_ACCELERATION_MPS2,
   PLAYER_AIM_ACCURACY,
-  PLAYER_MOVE_SPEED,
-  PLAYER_MOVE_SPEED_DIRECTION_AMPLITUDE,
+  PLAYER_BACKWARD_SPEED_PENALTY,
+  PLAYER_DECELERATION_MPS2,
+  PLAYER_RUN_SPEED,
   PLAYER_SIGHT_RANGE,
+  PLAYER_WALK_SPEED,
   TILE_SIZE_PX,
   WEAPON_MOVE_SWAY_OFFSET_PX,
 } from '../const';
@@ -32,7 +35,14 @@ export class Player extends Character {
     left: Phaser.Input.Keyboard.Key;
     right: Phaser.Input.Keyboard.Key;
   };
+  private readonly runKey: Phaser.Input.Keyboard.Key;
   private moveDirection = new Phaser.Math.Vector2(0, 0);
+  // Направление, в котором персонаж реально едет по инерции — в отличие от moveDirection
+  // (мгновенный ввод, используется для наклона/раскачки), не обнуляется при отпускании клавиш,
+  // чтобы было куда катиться, пока currentSpeed плавно тормозит до нуля.
+  private heading = new Phaser.Math.Vector2(0, -1);
+  private currentSpeed = 0;
+  private facingMoveAlignment = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -47,7 +57,7 @@ export class Player extends Character {
       x,
       y,
       {
-        [StatType.MOVE_SPEED]: PLAYER_MOVE_SPEED,
+        [StatType.MOVE_SPEED]: PLAYER_WALK_SPEED,
         [StatType.SIGHT_RANGE]: PLAYER_SIGHT_RANGE,
         [StatType.AIM_ACCURACY]: PLAYER_AIM_ACCURACY,
       },
@@ -61,6 +71,7 @@ export class Player extends Character {
       left: Phaser.Input.Keyboard.KeyCodes.A,
       right: Phaser.Input.Keyboard.KeyCodes.D,
     }) as any;
+    this.runKey = scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
     this.equipWeapon(WeaponType.KNIFE);
     this.setupAttackInput();
   }
@@ -110,7 +121,8 @@ export class Player extends Character {
   }
 
   private updateSpriteLean(): void {
-    this.sprite.setRotation(HUMANOID_MAX_LEAN_ANGLE * Math.sign(this.moveDirection.x));
+    const leanRatio = (this.facingMoveAlignment + 1) / 2;
+    this.sprite.setRotation(HUMANOID_MAX_LEAN_ANGLE * leanRatio * Math.sign(this.moveDirection.x));
   }
 
   private updateMovement(deltaTime: number): void {
@@ -122,23 +134,40 @@ export class Player extends Character {
     if (this.wasd.up.isDown) moveY -= 1;
     if (this.wasd.down.isDown) moveY += 1;
 
-    if (moveX === 0 && moveY === 0) {
+    const hasInput = moveX !== 0 || moveY !== 0;
+    let targetSpeed = 0;
+
+    if (hasInput) {
+      const direction = new Phaser.Math.Vector2(moveX, moveY).normalize();
+      this.moveDirection.copy(direction);
+      this.heading.copy(direction);
+
+      const moveAngle = Math.atan2(moveY, moveX);
+      this.facingMoveAlignment = Math.cos(this.facingAngle - moveAngle);
+      // 1 при движении точно по взгляду (без буста), проседает до (1 - PENALTY) при движении спиной.
+      const directionSpeedMultiplier =
+        1 - (PLAYER_BACKWARD_SPEED_PENALTY * (1 - this.facingMoveAlignment)) / 2;
+
+      const runMultiplier = this.runKey.isDown ? PLAYER_RUN_SPEED / PLAYER_WALK_SPEED : 1;
+      targetSpeed =
+        this.stats.getValue(StatType.MOVE_SPEED) * runMultiplier * directionSpeedMultiplier;
+    } else {
       this.moveDirection.set(0, 0);
-      return;
     }
 
-    const direction = new Phaser.Math.Vector2(moveX, moveY).normalize();
-    this.moveDirection.copy(direction);
+    // Текущая скорость плавно тянется к целевой, а не переключается скачком — разгон и торможение
+    // (в т.ч. между ходьбой и бегом) идут с разным темпом, торможение быстрее разгона.
+    const accelerationRate =
+      targetSpeed > this.currentSpeed ? PLAYER_ACCELERATION_MPS2 : PLAYER_DECELERATION_MPS2;
+    const maxSpeedStep = accelerationRate * (deltaTime / 1000);
+    const speedDelta = targetSpeed - this.currentSpeed;
+    this.currentSpeed += Math.sign(speedDelta) * Math.min(Math.abs(speedDelta), maxSpeedStep);
 
-    const moveAngle = Math.atan2(moveY, moveX);
-    const directionSpeedMultiplier =
-      1 + PLAYER_MOVE_SPEED_DIRECTION_AMPLITUDE * Math.cos(this.facingAngle - moveAngle);
+    if (this.currentSpeed <= 0) return;
 
-    const moveSpeed = this.stats.getValue(StatType.MOVE_SPEED) * directionSpeedMultiplier;
-    const distance = moveSpeed * (deltaTime / 1000);
-
-    const nextX = this.position.x + direction.x * distance;
-    const nextY = this.position.y + direction.y * distance;
+    const distance = this.currentSpeed * (deltaTime / 1000);
+    const nextX = this.position.x + this.heading.x * distance;
+    const nextY = this.position.y + this.heading.y * distance;
 
     if (this.worldMap.isWalkable(Math.round(nextX), Math.round(this.position.y))) {
       this.position.x = nextX;
